@@ -4,7 +4,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import urlencode
 
-from itou.approvals.models import Approval
+from itou.approvals.factories import SuspensionFactory
+from itou.approvals.models import Approval, Suspension
 from itou.cities.factories import create_test_cities
 from itou.cities.models import City
 from itou.eligibility.factories import EligibilityDiagnosisFactory
@@ -276,6 +277,75 @@ class ProcessViewsTest(TestCase):
         self.assertFormError(response, "form_user_address", "address_line_1", "Ce champ est obligatoire.")
         self.assertFormError(response, "form_user_address", "city", "Ce champ est obligatoire.")
         self.assertFormError(response, "form_user_address", "post_code", "Ce champ est obligatoire.")
+
+    def test_accept_with_active_suspension(self):
+        """Test the `accept` transition with active suspension for active user"""
+        create_test_cities(["54", "57"], num_per_department=2)
+        city = City.objects.first()
+        today = timezone.localdate()
+        # the old job of job seeker
+        job_seeker_user = JobSeekerWithAddressFactory()
+        old_job_application = JobApplicationWithApprovalFactory(
+            state=JobApplicationWorkflow.STATE_ACCEPTED,
+            job_seeker=job_seeker_user,
+            # Ensure that the old_job_application cannot be canceled.
+            hiring_start_at=today - relativedelta(days=100),
+        )
+        # create suspension for the job seeker
+        approval_job_seeker = old_job_application.approval
+        siae_user = old_job_application.to_siae.members.first()
+        susension_start_at = today
+        suspension_end_at = today + relativedelta(days=50)
+
+        SuspensionFactory(
+            approval=approval_job_seeker,
+            start_at=susension_start_at,
+            end_at=suspension_end_at,
+            created_by=siae_user,
+            reason=Suspension.Reason.BROKEN_CONTRACT.value,
+        )
+
+        # Now, another Siae wants to hire the job seeker
+        other_siae = SiaeWithMembershipFactory()
+        job_application = JobApplicationSentByJobSeekerFactory(
+            approval=approval_job_seeker,
+            state=JobApplicationWorkflow.STATE_PROCESSING,
+            job_seeker=job_seeker_user,
+            to_siae=other_siae,
+        )
+        other_siae_user = job_application.to_siae.members.first()
+
+        # login with other siae
+        self.client.login(username=other_siae_user.email, password=DEFAULT_PASSWORD)
+        url = reverse("apply:accept", kwargs={"job_application_id": job_application.pk})
+
+        hiring_start_at = today + relativedelta(days=20)
+        hiring_end_at = Approval.get_default_end_date(hiring_start_at)
+
+        post_data = {
+            # Data for `JobSeekerPoleEmploiStatusForm`.
+            "pole_emploi_id": job_application.job_seeker.pole_emploi_id,
+            # Data for `AcceptForm`.
+            "hiring_start_at": hiring_start_at.strftime(DuetDatePickerWidget.INPUT_DATE_FORMAT),
+            "hiring_end_at": hiring_end_at.strftime(DuetDatePickerWidget.INPUT_DATE_FORMAT),
+            "answer": "",
+            "address_line_1": job_seeker_user.address_line_1,
+            "post_code": job_seeker_user.post_code,
+            "city": city.name,
+            "city_slug": city.slug,
+        }
+        response = self.client.post(url, data=post_data)
+        self.assertEqual(response.status_code, 302)
+        get_job_application = JobApplication.objects.get(pk=job_application.pk)
+        g_suspension = get_job_application.approval.suspension_set.in_progress().last()
+
+        # The end date of suspension is set to d-1 of hiring start day
+        self.assertEqual(g_suspension.end_at, get_job_application.hiring_start_at - relativedelta(days=1))
+        # Check if the duration of approval was updated correctly
+        self.assertEqual(
+            get_job_application.approval.end_at,
+            approval_job_seeker.end_at + relativedelta(days=(g_suspension.end_at - g_suspension.start_at).days),
+        )
 
     def test_accept_with_manual_approval_delivery(self):
         """

@@ -281,6 +281,26 @@ class Approval(CommonApprovalMixin):
             and not self.user.last_accepted_job_application.can_be_cancelled
         )
 
+    @cached_property
+    def last_in_progress_suspension(self):
+        return self.suspension_set.in_progress().order_by("start_at").last()
+
+    @cached_property
+    def can_be_unsuspended(self):
+        if self.is_suspended:
+            return self.last_in_progress_suspension.reason in Suspension.REASONS_TO_UNSUSPEND
+        return False
+
+    def unsuspend(self, hiring_start_at):
+        """
+        When a job application is accepted, the approval is "unsuspended":
+        we do it by setting its end_date to JobApplication.hiring_start_at - 1 day.
+        """
+        active_suspension = self.last_in_progress_suspension
+        if active_suspension and self.can_be_unsuspended:
+            active_suspension.end_at = hiring_start_at - relativedelta(days=1)
+            active_suspension.save()
+
     # Postpone start date.
 
     @property
@@ -447,6 +467,11 @@ class Suspension(models.Model):
             """
             reasons = [cls.SUSPENDED_CONTRACT, cls.BROKEN_CONTRACT, cls.FINISHED_CONTRACT]
             return [(reason.value, reason.label) for reason in reasons]
+
+    REASONS_TO_UNSUSPEND = [
+        Reason.BROKEN_CONTRACT.value,
+        Reason.FINISHED_CONTRACT.value,
+    ]
 
     approval = models.ForeignKey(Approval, verbose_name="PASS IAE", on_delete=models.CASCADE)
     start_at = models.DateField(verbose_name="Date de début", default=timezone.localdate, db_index=True)
