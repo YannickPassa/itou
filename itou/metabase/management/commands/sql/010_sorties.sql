@@ -1,10 +1,6 @@
 /*
  
-L'objectif est de créer une table agrégée avec par convention:
-    - le nombre d'heures travaillées par les salariés en insertion
-    - le nombre d'etp consommés
-    - nombre de salarié en insertion
-Ces indicateurs sont déclinés par type de public cible:
+L'objectif est de créer une table agrégée avec l'indicateur nombre de sorties par type de public cible :
     - genre du salarié
     - RSA
     - niveau de formation du salarié
@@ -14,23 +10,23 @@ Ces indicateurs sont déclinés par type de public cible:
     - département et région de l'annexe financière
   
 Un filtre est appliqué pour récupérer un historique de 2 ans en plus de l'année en cours
-*/
-    
+
+*/    
+
 select 
-    count (distinct(identifiant_salarie)) as nombre_salaries,
-    sum(nombre_etp_consommes)/12 as nombre_etp,
-    sum(nombre_heures_travaillees) as nombre_heures_travaillees, 
-    date_part('year', date_saisie) as annee_saisie,
+    count(distinct(identifiant_salarie)) as nombre_sorties, 
+    date_part('year', date_sortie) as annee_sortie,
     etablissement_Public_Territorial,
     nom_epci,
     niveau_formation_salarie,
     genre_salarie,
     rsa, 
     type_siae,
-    identifiant_salarie,
+    motif_sortie,
+    categorie_sortie,
     id_structure_asp, 
     structure_denomination,
-    commune_structure, 
+    commune_structure , 
     code_insee_structure, 
     nom_departement_af,
     nom_region_af,
@@ -38,20 +34,23 @@ select
     af_numero_annexe_financiere
 from 
     saisies_mensuelles_IAE
-where nombre_heures_travaillees > 0 
-      and date_part('year', date_saisie) >= (date_part('year', current_date) - 2)
+where 
+    date_part('year', date_sortie) >= (date_part('year', current_date) - 2)
+    /* Prendre en compte les salariés qui ont travaillé au moins une heure dans la structure */
+    and nombre_heures_travaillees >= 1
 group by 
-    annee_saisie,
+    annee_sortie,  
     etablissement_Public_Territorial,
     nom_epci,
     niveau_formation_salarie,
     genre_salarie,
     rsa, 
     type_siae,
-    identifiant_salarie,
+    motif_sortie,
+    categorie_sortie,
     id_structure_asp, 
     structure_denomination,
-    commune_structure, 
+    commune_structure , 
     code_insee_structure, 
     nom_departement_af,
     nom_region_af,

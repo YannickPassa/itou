@@ -6,7 +6,6 @@ import datetime
 import json
 import os
 
-import pytz
 from django.utils import timezone
 
 
@@ -203,8 +202,6 @@ LANGUAGE_CODE = "fr-FR"
 TIME_ZONE = "Europe/Paris"
 
 USE_I18N = True
-
-USE_L10N = True
 
 USE_TZ = True
 
@@ -479,7 +476,7 @@ ASP_ITOU_PREFIX = "99999"
 # On November 30th, 2021, we delivered approvals for AI structures.
 # See itou.users.management.commands.import_ai_employees
 AI_EMPLOYEES_STOCK_DEVELOPER_EMAIL = os.environ.get("AI_EMPLOYEES_STOCK_DEVELOPER_EMAIL", "")
-AI_EMPLOYEES_STOCK_IMPORT_DATE = datetime.datetime(2021, 11, 30, tzinfo=pytz.utc)
+AI_EMPLOYEES_STOCK_IMPORT_DATE = datetime.datetime(2021, 11, 30, tzinfo=timezone.utc)
 
 # Metabase
 # ------------------------------------------------------------------------------
@@ -677,4 +674,4 @@ EMPLOYEE_RECORD_ARCHIVING_DELAY_IN_DAYS = int(os.environ.get("EMPLOYEE_RECORD_AR
 # This is the official and final production phase date of the employee record feature.
 # It is used as parameter to filter the eligible job applications for the feature.
 # (no job application before this date can be used for this feature)
-EMPLOYEE_RECORD_FEATURE_AVAILABILITY_DATE = timezone.datetime(2021, 7, 1, tzinfo=pytz.UTC)
+EMPLOYEE_RECORD_FEATURE_AVAILABILITY_DATE = timezone.datetime(2021, 7, 1, tzinfo=timezone.utc)
