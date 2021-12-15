@@ -1,6 +1,6 @@
 import datetime
 import io
-from unittest.mock import PropertyMock, patch
+from unittest.mock import ANY, PropertyMock, patch
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -28,7 +28,11 @@ from itou.job_applications.factories import (
     JobApplicationWithApprovalNotCancellableFactory,
     JobApplicationWithoutApprovalFactory,
 )
-from itou.job_applications.models import JobApplication, JobApplicationWorkflow
+from itou.job_applications.models import (
+    JobApplication,
+    JobApplicationPoleEmploiNotificationLog,
+    JobApplicationWorkflow,
+)
 from itou.job_applications.notifications import NewQualifiedJobAppEmployersNotification
 from itou.jobs.factories import create_test_romes_and_appellations
 from itou.jobs.models import Appellation
@@ -36,11 +40,19 @@ from itou.siaes.factories import SiaeFactory, SiaeWithMembershipAndJobsFactory
 from itou.siaes.models import Siae
 from itou.users.factories import JobSeekerFactory, SiaeStaffFactory, UserFactory
 from itou.users.models import User
+from itou.utils.apis.pole_emploi import (
+    POLE_EMPLOI_PASS_APPROVED,
+    POLE_EMPLOI_PASS_REFUSED,
+    PoleEmploiIndividu,
+    PoleEmploiIndividuResult,
+    PoleEmploiMiseAJourPassIAEException,
+)
 from itou.utils.templatetags import format_filters
 
 
+@patch("itou.job_applications.models.huey_notify_pole_employ", return_value=False)
 class JobApplicationModelTest(TestCase):
-    def test_eligibility_diagnosis_by_siae_required(self):
+    def test_eligibility_diagnosis_by_siae_required(self, *args, **kwargs):
         job_application = JobApplicationFactory(
             state=JobApplicationWorkflow.STATE_PROCESSING, to_siae__kind=Siae.KIND_GEIQ
         )
@@ -59,15 +71,16 @@ class JobApplicationModelTest(TestCase):
         self.assertFalse(has_considered_valid_diagnoses)
         self.assertTrue(job_application.eligibility_diagnosis_by_siae_required)
 
-    def test_accepted_by(self):
+    def test_accepted_by(self, notification_mock):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
             state=JobApplicationWorkflow.STATE_PROCESSING
         )
         user = job_application.to_siae.members.first()
         job_application.accept(user=user)
         self.assertEqual(job_application.accepted_by, user)
+        notification_mock.assert_called()
 
-    def test_is_sent_by_authorized_prescriber(self):
+    def test_is_sent_by_authorized_prescriber(self, *args, **kwargs):
         job_application = JobApplicationSentByJobSeekerFactory()
         self.assertFalse(job_application.is_sent_by_authorized_prescriber)
 
@@ -84,7 +97,7 @@ class JobApplicationModelTest(TestCase):
         self.assertTrue(job_application.is_sent_by_authorized_prescriber)
 
     @patch.object(JobApplication, "can_be_cancelled", new_callable=PropertyMock, return_value=False)
-    def test_can_download_approval_as_pdf(self, mock_can_be_cancelled):
+    def test_can_download_approval_as_pdf(self, *args, **kwargs):
         """
         A user can download an approval only when certain conditions
         are met:
@@ -111,7 +124,7 @@ class JobApplicationModelTest(TestCase):
         job_application = JobApplicationFactory(state=JobApplicationWorkflow.STATE_ACCEPTED)
         self.assertFalse(job_application.can_download_approval_as_pdf)
 
-    def test_can_download_expired_approval_as_pdf(self):
+    def test_can_download_expired_approval_as_pdf(self, *args, **kwargs):
         """
         A user can download an expired approval PDF.
         """
@@ -124,7 +137,7 @@ class JobApplicationModelTest(TestCase):
         job_application = JobApplicationWithApprovalFactory(approval=ended_approval, hiring_start_at=start)
         self.assertTrue(job_application.can_download_approval_as_pdf)
 
-    def test_can_be_cancelled(self):
+    def test_can_be_cancelled(self, *args, **kwargs):
         """
         A user can cancel a job application provided that it has no related
         employee record in SENT or PROCESSED state or that is does not come from
@@ -160,7 +173,7 @@ class JobApplicationModelTest(TestCase):
         )
         self.assertFalse(job_application.can_be_cancelled)
 
-    def test_can_be_archived(self):
+    def test_can_be_archived(self, *args, **kwargs):
         """
         Only cancelled, refused and obsolete job_applications can be archived.
         """
@@ -184,7 +197,7 @@ class JobApplicationModelTest(TestCase):
             job_application = JobApplicationFactory(state=state)
             self.assertTrue(job_application.can_be_archived)
 
-    def test_is_from_ai_stock(self):
+    def test_is_from_ai_stock(self, *args, **kwargs):
         job_application_created_at = settings.AI_EMPLOYEES_STOCK_IMPORT_DATE
         developer = UserFactory(email=settings.AI_EMPLOYEES_STOCK_DEVELOPER_EMAIL)
 
@@ -205,7 +218,6 @@ class JobApplicationModelTest(TestCase):
 
 class JobApplicationQuerySetTest(TestCase):
     def test_created_in_past(self):
-
         now = timezone.now()
         hours_ago_10 = now - timezone.timedelta(hours=10)
         hours_ago_20 = now - timezone.timedelta(hours=20)
@@ -299,6 +311,7 @@ class JobApplicationQuerySetTest(TestCase):
         self.assertIn(job_app, JobApplication.objects.eligible_as_employee_record(job_app.to_siae))
 
 
+@patch("itou.job_applications.models.huey_notify_pole_employ", return_value=False)
 class JobApplicationNotificationsTest(TestCase):
     """
     Test JobApplication notifications: emails content and receivers.
@@ -309,7 +322,7 @@ class JobApplicationNotificationsTest(TestCase):
         # Set up data for the whole TestCase.
         create_test_romes_and_appellations(["M1805"], appellations_per_rome=2)
 
-    def test_new_for_siae(self):
+    def test_new_for_siae(self, *args, **kwargs):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
             selected_jobs=Appellation.objects.all(),
         )
@@ -335,7 +348,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(str(job_application.to_siae.pk), email.body)
         self.assertIn(job_application.resume_link, email.body)
 
-    def test_new_for_prescriber(self):
+    def test_new_for_prescriber(self, *args, **kwargs):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
             selected_jobs=Appellation.objects.all()
         )
@@ -372,7 +385,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertNotIn(format_filters.format_phone(job_application.sender.phone), email.body)
         self.assertIn(job_application.resume_link, email.body)
 
-    def test_new_for_job_seeker(self):
+    def test_new_for_job_seeker(self, *args, **kwargs):
         job_application = JobApplicationSentByJobSeekerFactory(selected_jobs=Appellation.objects.all())
         email = job_application.email_new_for_job_seeker(base_url="http://testserver")
         # To.
@@ -401,7 +414,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(reverse("account_reset_password"), email.body)
         self.assertIn(job_application.resume_link, email.body)
 
-    def test_accept_for_job_seeker(self):
+    def test_accept_for_job_seeker(self, *args, **kwargs):
         job_application = JobApplicationSentByJobSeekerFactory()
         email = job_application.email_accept_for_job_seeker
         # To.
@@ -415,7 +428,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(job_application.to_siae.display_name, email.body)
         self.assertIn(job_application.answer, email.body)
 
-    def test_accept_for_proxy(self):
+    def test_accept_for_proxy(self, *args, **kwargs):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory()
         email = job_application.email_accept_for_proxy
         # To.
@@ -435,7 +448,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(job_application.hiring_end_at.strftime("%d/%m/%Y"), email.body)
         self.assertIn(job_application.sender_prescriber_organization.accept_survey_url, email.body)
 
-    def test_accept_trigger_manual_approval(self):
+    def test_accept_trigger_manual_approval(self, *args, **kwargs):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
             state=JobApplicationWorkflow.STATE_ACCEPTED, hiring_start_at=datetime.date.today()
         )
@@ -460,7 +473,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(accepted_by.email, email.body)
         self.assertIn(reverse("admin:approvals_approval_manually_add_approval", args=[job_application.pk]), email.body)
 
-    def test_refuse(self):
+    def test_refuse(self, *args, **kwargs):
 
         # When sent by authorized prescriber.
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
@@ -495,7 +508,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(job_application.answer, email.body)
         self.assertNotIn(job_application.answer_to_prescriber, email.body)
 
-    def test_email_deliver_approval(self):
+    def test_email_deliver_approval(self, *args, **kwargs):
         job_seeker = JobSeekerFactory()
         approval = ApprovalFactory(user=job_seeker)
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
@@ -525,7 +538,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIn(settings.ITOU_ASSISTANCE_URL, email.body)
         self.assertIn(job_application.to_siae.accept_survey_url, email.body)
 
-    def test_manually_deliver_approval(self):
+    def test_manually_deliver_approval(self, *args, **kwargs):
         staff_member = UserFactory(is_staff=True)
         job_seeker = JobSeekerFactory(
             pole_emploi_id="", lack_of_pole_emploi_id_reason=JobSeekerFactory._meta.model.REASON_FORGOTTEN
@@ -547,7 +560,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIsNone(job_application.approval_manually_refused_by)
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_manually_refuse_approval(self):
+    def test_manually_refuse_approval(self, *args, **kwargs):
         staff_member = UserFactory(is_staff=True)
         job_seeker = JobSeekerFactory(
             pole_emploi_id="", lack_of_pole_emploi_id_reason=JobSeekerFactory._meta.model.REASON_FORGOTTEN
@@ -567,7 +580,7 @@ class JobApplicationNotificationsTest(TestCase):
         self.assertIsNone(job_application.approval_number_sent_at)
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_cancel(self):
+    def test_cancel(self, *args, **kwargs):
         job_application = JobApplicationSentByAuthorizedPrescriberOrganizationFactory(
             state=JobApplicationWorkflow.STATE_ACCEPTED
         )
@@ -695,6 +708,7 @@ class NewQualifiedJobAppEmployersNotificationTest(TestCase):
         self.assertEqual(len(notification.recipients_emails), 0)
 
 
+@patch("itou.job_applications.models.huey_notify_pole_employ", return_value=False)
 class JobApplicationWorkflowTest(TestCase):
     """Test JobApplication workflow."""
 
@@ -703,7 +717,7 @@ class JobApplicationWorkflowTest(TestCase):
         self.accept_email_subject_proxy = "Candidature acceptée et votre avis sur les emplois de l'inclusion"
         self.accept_email_subject_job_seeker = "Candidature acceptée"
 
-    def test_accept_job_application_sent_by_job_seeker_and_make_others_obsolete(self):
+    def test_accept_job_application_sent_by_job_seeker_and_make_others_obsolete(self, notify_mock):
         """
         When a job seeker's application is accepted, the others are marked obsolete.
         """
@@ -732,8 +746,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[1].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_obsolete(self):
+    def test_accept_obsolete(self, notify_mock):
         """
         An obsolete job application can be accepted.
         """
@@ -764,8 +780,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[1].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_job_seeker_with_already_existing_valid_approval(self):
+    def test_accept_job_application_sent_by_job_seeker_with_already_existing_valid_approval(self, notify_mock):
         """
         When a Pôle emploi approval already exists, it is reused.
         """
@@ -787,8 +805,12 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[1].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_job_seeker_with_already_existing_valid_approval_in_the_future(self):
+    def test_accept_job_application_sent_by_job_seeker_with_already_existing_valid_approval_in_the_future(
+        self, notify_mock
+    ):
         """
         When a Pôle emploi approval already exists, it is reused.
         Some Pole Emploi approvals have a starting date in the future, we discard them
@@ -818,8 +840,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertNotEqual(hiring_start_at, pe_approval.start_at)
         # The job application is accepted, with an approval with the requested hiring start date
         self.assertEqual(hiring_start_at, job_application.approval.start_at)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_job_seeker_with_forgotten_pole_emploi_id(self):
+    def test_accept_job_application_sent_by_job_seeker_with_forgotten_pole_emploi_id(self, notify_mock):
         """
         When a Pôle emploi ID is forgotten, a manual approval delivery is triggered.
         """
@@ -838,8 +862,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the team.
         self.assertIn("PASS IAE requis sur Itou", mail.outbox[1].subject)
+        # no approval, so no notification sent to pole emploi
+        notify_mock.assert_not_called()
 
-    def test_accept_job_application_sent_by_prescriber(self):
+    def test_accept_job_application_sent_by_prescriber(self, notify_mock):
         """
         Accept a job application sent by an "orienteur".
         """
@@ -860,8 +886,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_proxy, mail.outbox[1].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[2].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_authorized_prescriber(self):
+    def test_accept_job_application_sent_by_authorized_prescriber(self, notify_mock):
         """
         Accept a job application sent by an authorized prescriber.
         """
@@ -883,8 +911,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_proxy, mail.outbox[1].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[2].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_authorized_prescriber_with_approval_in_waiting_period(self):
+    def test_accept_job_application_sent_by_authorized_prescriber_with_approval_in_waiting_period(self, notify_mock):
         """
         An authorized prescriber can bypass the waiting period.
         """
@@ -913,8 +943,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_proxy, mail.outbox[1].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[2].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_sent_by_prescriber_with_approval_in_waiting_period(self):
+    def test_accept_job_application_sent_by_prescriber_with_approval_in_waiting_period(self, notify_mock):
         """
         An "orienteur" cannot bypass the waiting period.
         """
@@ -931,8 +963,9 @@ class JobApplicationWorkflowTest(TestCase):
         )
         with self.assertRaises(xwf_models.AbortTransition):
             job_application.accept(user=job_application.to_siae.members.first())
+            notify_mock.assert_not_called()
 
-    def test_accept_job_application_sent_by_job_seeker_in_waiting_period_valid_diagnosis(self):
+    def test_accept_job_application_sent_by_job_seeker_in_waiting_period_valid_diagnosis(self, notify_mock):
         """
         A job seeker with a valid diagnosis can start an IAE path
         even if he's in a waiting period.
@@ -962,8 +995,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the employer.
         self.assertIn(self.sent_pass_email_subject, mail.outbox[1].subject)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_accept_job_application_by_siae_with_no_approval(self):
+    def test_accept_job_application_by_siae_with_no_approval(self, notify_mock):
         """
         A SIAE can hire somebody without getting approval if they don't want one
         Basically the same as the 'accept' part, except we don't create an approval
@@ -983,8 +1018,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the proxy.
         self.assertIn(self.accept_email_subject_proxy, mail.outbox[1].subject)
+        # No approval, so no notification is sent to Pole Emploi
+        notify_mock.assert_not_called()
 
-    def test_accept_job_application_by_siae_not_subject_to_eligibility_rules(self):
+    def test_accept_job_application_by_siae_not_subject_to_eligibility_rules(self, notify_mock):
         """
         No approval should be delivered for an employer not subject to eligibility rules.
         """
@@ -1002,8 +1039,10 @@ class JobApplicationWorkflowTest(TestCase):
         self.assertIn(self.accept_email_subject_job_seeker, mail.outbox[0].subject)
         # Email sent to the proxy.
         self.assertIn(self.accept_email_subject_proxy, mail.outbox[1].subject)
+        # No approval, so no notification is sent to Pole Emploi
+        notify_mock.assert_not_called()
 
-    def test_accept_has_link_to_eligibility_diagnosis(self):
+    def test_accept_has_link_to_eligibility_diagnosis(self, notify_mock):
         """
         Given a job application for an SIAE subject to eligibility rules,
         when accepting it, then the eligibility diagnosis is linked to it.
@@ -1027,8 +1066,10 @@ class JobApplicationWorkflowTest(TestCase):
         job_application.accept(user=to_siae_staff_member)
         self.assertTrue(job_application.to_siae.is_subject_to_eligibility_rules)
         self.assertEqual(job_application.eligibility_diagnosis, eligibility_diagnosis)
+        # Approval delivered -> Pole Emploi is notified
+        notify_mock.assert_called()
 
-    def test_refuse(self):
+    def test_refuse(self, notify_mock):
         user = JobSeekerFactory()
         kwargs = {"job_seeker": user, "sender": user, "sender_kind": JobApplication.SENDER_KIND_JOB_SEEKER}
 
@@ -1044,8 +1085,10 @@ class JobApplicationWorkflowTest(TestCase):
             self.assertEqual(len(mail.outbox), 1)
             self.assertIn("Candidature déclinée", mail.outbox[0].subject)
             mail.outbox = []
+            # Approval refused -> Pole Emploi is notified
+            notify_mock.assert_called()
 
-    def test_cancel_delete_linked_approval(self):
+    def test_cancel_delete_linked_approval(self, *args, **kwargs):
         job_application = JobApplicationWithApprovalFactory()
         self.assertEqual(job_application.job_seeker.approvals.count(), 1)
         self.assertEqual(JobApplication.objects.filter(approval=job_application.approval).count(), 1)
@@ -1058,7 +1101,7 @@ class JobApplicationWorkflowTest(TestCase):
         job_application.refresh_from_db()
         self.assertFalse(job_application.approval)
 
-    def test_cancel_do_not_delete_linked_approval(self):
+    def test_cancel_do_not_delete_linked_approval(self, *args, **kwargs):
 
         # The approval is linked to two accepted job applications
         job_application = JobApplicationWithApprovalFactory()
@@ -1076,7 +1119,7 @@ class JobApplicationWorkflowTest(TestCase):
         job_application.refresh_from_db()
         self.assertTrue(job_application.approval)
 
-    def test_cancellation_not_allowed(self):
+    def test_cancellation_not_allowed(self, *args, **kwargs):
         today = datetime.date.today()
 
         # Linked employee record with blocking status
@@ -1097,10 +1140,11 @@ class JobApplicationWorkflowTest(TestCase):
             job_application.cancel(user=cancellation_user)
 
 
+@patch("itou.job_applications.models.huey_notify_pole_employ", return_value=False)
 class JobApplicationCsvExportTest(TestCase):
     """Test csv export of a list of job applications."""
 
-    def test_csv_export_contains_the_necessary_info(self):
+    def test_csv_export_contains_the_necessary_info(self, *args, **kwargs):
         create_test_romes_and_appellations(["M1805"], appellations_per_rome=2)
         job_seeker = JobSeekerFactory()
         job_application = JobApplicationSentByJobSeekerFactory(
@@ -1134,7 +1178,7 @@ class JobApplicationCsvExportTest(TestCase):
         self.assertIn(job_application.approval.start_at.strftime("%d/%m/%Y"), csv_output.getvalue())
         self.assertIn(job_application.approval.end_at.strftime("%d/%m/%Y"), csv_output.getvalue())
 
-    def test_refused_job_application_has_reason_in_csv_export(self):
+    def test_refused_job_application_has_reason_in_csv_export(self, *args, **kwargs):
         user = JobSeekerFactory()
         kwargs = {
             "job_seeker": user,
@@ -1151,3 +1195,201 @@ class JobApplicationCsvExportTest(TestCase):
 
         self.assertIn("Candidature déclinée", csv_output.getvalue())
         self.assertIn("Candidat non venu ou non joignable", csv_output.getvalue())
+
+
+class JobApplicationPoleEmploiNotificationLogTest(TestCase):
+    """Test that the notification system for Pole Emploi works as expected."""
+
+    sample_token = "abc123"
+    sample_encrypted_nir = "some_nir"
+
+    sample_pole_emploi_individual = PoleEmploiIndividu("john", "doe", datetime.date(1987, 5, 8), "1870275051055")
+    sample_individual_search_success = PoleEmploiIndividuResult("some_id", "S001", "")
+    sample_individual_search_failure = PoleEmploiIndividuResult("", "R10", "")
+
+    # non-trivial `unittest.patch` thing to note:
+    # get_access_token is defined in itou.utils.apis.esd.get_access_token
+    # BUT it is imported in itou.job_applications.models. We CAN patch both,
+    # but we NEED to patch the latter in order to correctly set what we want
+    @patch("itou.job_applications.models.get_access_token", return_value=sample_token)
+    def test_get_token_nominal(self, get_access_token_mock):
+        token = JobApplicationPoleEmploiNotificationLog.get_token()
+        get_access_token_mock.assert_called_with(ANY)
+        self.assertEqual(token, self.sample_token)
+
+    @patch("itou.job_applications.models.get_access_token", side_effect=PoleEmploiMiseAJourPassIAEException("", ""))
+    def test_get_token_error(self, get_access_token_mock):
+        with self.assertRaises(PoleEmploiMiseAJourPassIAEException):
+            JobApplicationPoleEmploiNotificationLog.get_token()
+            get_access_token_mock.assert_called_with(ANY)
+
+    @patch(
+        "itou.job_applications.models.recherche_individu_certifie_api", return_value=sample_individual_search_success
+    )
+    def test_get_individual_nominal(self, get_individual_mock):
+        encrypted_nir = JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual(
+            self.sample_pole_emploi_individual, self.sample_token
+        )
+        get_individual_mock.assert_called_with(self.sample_pole_emploi_individual, self.sample_token)
+        self.assertEqual(encrypted_nir, self.sample_individual_search_success.id_national_demandeur)
+
+    @patch(
+        "itou.job_applications.models.recherche_individu_certifie_api", return_value=sample_individual_search_failure
+    )
+    def test_get_individual_not_found(self, get_individual_mock):
+        encrypted_nir = JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual(
+            self.sample_pole_emploi_individual, self.sample_token
+        )
+        get_individual_mock.assert_called_with(self.sample_pole_emploi_individual, self.sample_token)
+        self.assertEqual(encrypted_nir, self.sample_individual_search_failure.id_national_demandeur)
+
+
+# We patch sleep since it is used in the real calls, but we don’t want to slow down the tests
+@patch("itou.job_applications.models.sleep", return_value=False)
+class JobApplicationNotifyPoleEmploiIntegrationTest(TestCase):
+    """
+    Integration test to ensure that the entire pole emploi process works as expected. We want to document:
+    - the possible ways the process can break
+    - that all the notification logs are created as expected
+
+    Due to the fact that the core function we want to test (`JobApplication.notify_pole_emploi_accepted` and
+    `JobApplication.notify_pole_emploi_refused`) make use of huey for async, those tests call
+    _notify_pole_employ directly in order to bypass the need for a task runner
+    """
+
+    token = "abc123"
+    encrypted_nir = "some_nir"
+    sample_pole_emploi_individual = PoleEmploiIndividu("john", "doe", datetime.date(1987, 5, 8), "1870275051055")
+
+    @patch("itou.job_applications.models.get_access_token", return_value=token)
+    def test_invalid_job_seeker_for_pole_emploi(self, access_token_mock, sleep_mock):
+        """
+        Error case: our job seeker is not valid (from PoleEmploi’s point of view: here, the NIR is missing)
+         - We do not even call the APIs
+         - no entry should be added to the notification log database
+        """
+        job_seeker = JobSeekerFactory(nir="")
+        job_application = JobApplicationWithApprovalFactory(job_seeker=job_seeker)
+        pe_individual = PoleEmploiIndividu.from_job_seeker(job_application.job_seeker)
+        self.assertFalse(pe_individual.is_valid())
+        notif_result = job_application._notify_pole_employ(POLE_EMPLOI_PASS_APPROVED)
+        self.assertFalse(notif_result)
+        access_token_mock.assert_not_called()
+        self.assertFalse(
+            JobApplicationPoleEmploiNotificationLog.objects.filter(job_application=job_application).exists()
+        )
+
+    # Since there are multiple patch, the order matters: the parameters are injected in reverse order
+    @patch("itou.job_applications.models.mise_a_jour_pass_iae", return_value=True)
+    @patch(
+        "itou.job_applications.models.JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual",
+        return_value=encrypted_nir,
+    )
+    @patch("itou.job_applications.models.get_access_token", return_value=token)
+    def test_notification_accepted_nominal(self, access_token_mock, nir_mock, maj_mock, sleep_mock):
+        """
+        Nominal scenario: we sent a notification for acceptation and everything worked
+         - All the APIs should be called
+         - An entry in the notification log should be added with status OK
+        """
+        job_application = JobApplicationWithApprovalFactory()
+        # our job seeker is valid
+        pe_individual = PoleEmploiIndividu.from_job_seeker(job_application.job_seeker)
+        self.assertTrue(pe_individual.is_valid())
+        self.assertTrue(job_application._notify_pole_employ(POLE_EMPLOI_PASS_APPROVED))
+
+        access_token_mock.assert_called_with(ANY)
+        nir_mock.assert_called_with(ANY, self.token)
+        maj_mock.assert_called_with(job_application, ANY, self.encrypted_nir, self.token)
+        notification_log = JobApplicationPoleEmploiNotificationLog.objects.get(job_application=job_application)
+        self.assertEqual(notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_OK)
+
+    @patch("itou.job_applications.models.mise_a_jour_pass_iae", return_value=True)
+    @patch(
+        "itou.job_applications.models.JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual",
+        return_value=encrypted_nir,
+    )
+    @patch("itou.job_applications.models.get_access_token", return_value=token)
+    def test_notification_refused_nominal(self, access_token_mock, nir_mock, maj_mock, sleep_mock):
+        """
+        Nominal scenario: we sent a notification for refusal and everything worked
+         - All the APIs should be called
+         - An entry in the notification log should be added with status OK
+        """
+        job_application = JobApplicationWithApprovalFactory()
+        # our job seeker is valid
+        pe_individual = PoleEmploiIndividu.from_job_seeker(job_application.job_seeker)
+        self.assertTrue(pe_individual.is_valid())
+        self.assertTrue(job_application._notify_pole_employ(POLE_EMPLOI_PASS_REFUSED))
+
+        access_token_mock.assert_called_with(ANY)
+        nir_mock.assert_called_with(ANY, self.token)
+        maj_mock.assert_called_with(job_application, ANY, self.encrypted_nir, self.token)
+        notification_log = JobApplicationPoleEmploiNotificationLog.objects.get(job_application=job_application)
+        self.assertEqual(notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_OK)
+
+    @patch("itou.job_applications.models.mise_a_jour_pass_iae", return_value=True)
+    @patch(
+        "itou.job_applications.models.JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual",
+        return_value=encrypted_nir,
+    )
+    @patch("itou.job_applications.models.get_access_token", side_effect=PoleEmploiMiseAJourPassIAEException("401"))
+    def test_notification_authentication_failure(self, access_token_mock, nir_mock, maj_mock, sleep_mock):
+        """
+        Authentication failed: only the get_token call should be made, and an entry with the failure should be added
+        """
+        job_application = JobApplicationWithApprovalFactory()
+        self.assertFalse(job_application._notify_pole_employ(POLE_EMPLOI_PASS_APPROVED))
+
+        access_token_mock.assert_called_with(ANY)
+        nir_mock.assert_not_called()
+        maj_mock.assert_not_called()
+        notification_log = JobApplicationPoleEmploiNotificationLog.objects.get(job_application=job_application)
+        self.assertEqual(notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_FAIL_AUTHENTICATION)
+
+    @patch("itou.job_applications.models.mise_a_jour_pass_iae", return_value=True)
+    @patch(
+        "itou.job_applications.models.JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual",
+        side_effect=PoleEmploiMiseAJourPassIAEException("200", "R010"),
+    )
+    @patch("itou.job_applications.models.get_access_token", return_value=token)
+    def test_notification_recherche_individu_not_found(self, access_token_mock, nir_mock, maj_mock, sleep_mock):
+        """
+        Error case: we have a valid authentification token, but the job seeker is not found on Pole Emploi’s end:
+         - the mise a jour is not done
+         - an entry should be created, showing the problem came from recherche individu
+        """
+        job_application = JobApplicationWithApprovalFactory()
+        self.assertFalse(job_application._notify_pole_employ(POLE_EMPLOI_PASS_APPROVED))
+
+        access_token_mock.assert_called_with(ANY)
+        nir_mock.assert_called_with(ANY, self.token)
+        maj_mock.assert_not_called()
+        notification_log = JobApplicationPoleEmploiNotificationLog.objects.get(job_application=job_application)
+        self.assertEqual(
+            notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_FAIL_SEARCH_INDIVIDUAL
+        )
+
+    @patch("itou.job_applications.models.mise_a_jour_pass_iae", side_effect=PoleEmploiMiseAJourPassIAEException("500"))
+    @patch(
+        "itou.job_applications.models.JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual",
+        return_value=encrypted_nir,
+    )
+    @patch("itou.job_applications.models.get_access_token", return_value=token)
+    def test_notification_mise_a_jour_crashed(self, access_token_mock, nir_mock, maj_mock, sleep_mock):
+        """
+        Error case: valid authentification token and PoleEmploi provided us with a valid encrypted nir, but
+        the mise_a_jour_pass_iae API call crashed
+         - the mise a jour is not done
+         - an entry should be created, showing the problem came from mise_a_jour_pass_iae
+        """
+        job_application = JobApplicationWithApprovalFactory()
+        self.assertFalse(job_application._notify_pole_employ(POLE_EMPLOI_PASS_APPROVED))
+
+        access_token_mock.assert_called_with(ANY)
+        nir_mock.assert_called_with(ANY, self.token)
+        maj_mock.assert_called_with(job_application, ANY, self.encrypted_nir, self.token)
+        notification_log = JobApplicationPoleEmploiNotificationLog.objects.get(job_application=job_application)
+        self.assertEqual(
+            notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_FAIL_NOTIFY_POLE_EMPLOI
+        )
