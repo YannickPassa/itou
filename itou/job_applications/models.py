@@ -19,7 +19,6 @@ from itou.job_applications.tasks import huey_notify_pole_employ
 from itou.utils.apis.esd import get_access_token
 from itou.utils.apis.pole_emploi import (
     POLE_EMPLOI_PASS_APPROVED,
-    POLE_EMPLOI_PASS_REFUSED,
     PoleEmploiIndividu,
     PoleEmploiMiseAJourPassIAEException,
     mise_a_jour_pass_iae,
@@ -706,7 +705,6 @@ class JobApplication(xwf_models.WorkflowEnabled, models.Model):
         if self.is_sent_by_proxy:
             emails.append(self.email_refuse_for_proxy)
         connection.send_messages(emails)
-        self.notify_pole_emploi_refused()
 
     @xwf_models.transition()
     def cancel(self, *args, **kwargs):
@@ -864,11 +862,6 @@ class JobApplication(xwf_models.WorkflowEnabled, models.Model):
             return huey_notify_pole_employ(self, POLE_EMPLOI_PASS_APPROVED)
         return False
 
-    def notify_pole_emploi_refused(self) -> bool:
-        if settings.API_ESD_SHOULD_PERFORM_MISE_A_JOUR_PASS:
-            return huey_notify_pole_employ(self, POLE_EMPLOI_PASS_REFUSED)
-        return False
-
     def _notify_pole_employ(self, mode: str) -> bool:
         """
         The entire logic for notifying Pole Emploi when a job_application is accepted:
@@ -887,6 +880,11 @@ class JobApplication(xwf_models.WorkflowEnabled, models.Model):
          - we keep logs of the successful/failed attempts
          - when anything break, we quit early
         """
+        # We do not send approvals that start in the future to PE, because the information system in front
+        # can’t handle them. I’ll keep my opinion about this for talks that involve an unreasonnable amount of beer.
+        # Another mechanism will be in charge of sending them on their start date
+        if self.approval.start_at > timezone.now().date():
+            return False
         individual = PoleEmploiIndividu.from_job_seeker(self.job_seeker)
         if individual is None or not individual.is_valid():
             # We may not have a valid user (missing NIR, for instance),
