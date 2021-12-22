@@ -298,7 +298,7 @@ class JobApplicationQuerySetTest(TestCase):
         self.assertNotIn(job_app, JobApplication.objects.eligible_as_employee_record(job_app.to_siae))
 
         # Approval `create_employee_record` is False.
-        job_app = JobApplicationWithApprovalNotCancellableFactory(approval__create_employee_record=False)
+        job_app = JobApplicationWithApprovalNotCancellableFactory(create_employee_record=False)
         self.assertNotIn(job_app, JobApplication.objects.eligible_as_employee_record(job_app.to_siae))
 
         # Must be accepted and only after CANCELLATION_DAYS_AFTER_HIRING_STARTED
