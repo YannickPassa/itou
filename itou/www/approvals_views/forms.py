@@ -116,13 +116,18 @@ class SuspensionForm(forms.ModelForm):
         # Show new reasons but keep old ones for history.
         self.fields["reason"].choices = Suspension.Reason.displayed_choices
 
-        if not self.instance.pk:
+        today = timezone.now().date()
+        if self.instance.pk:
+            referent_date = self.instance.created_at.date()
+            suspension_pk = self.instance.pk
+        else:
+            referent_date = today
+            suspension_pk = None
             self.instance.siae = self.siae
             self.instance.approval = self.approval
             self.fields["reason"].initial = None  # Uncheck radio buttons.
 
-        today = timezone.now().date()
-        min_start_at = Suspension.next_min_start_at(self.approval)
+        min_start_at = Suspension.next_min_start_at(self.approval, suspension_pk, referent_date, True)
         # A suspension is backdatable but cannot start in the future.
         self.fields["start_at"].widget = DuetDatePickerWidget({"min": min_start_at, "max": today})
         self.fields["end_at"].widget = DuetDatePickerWidget(
@@ -160,6 +165,27 @@ class SuspensionForm(forms.ModelForm):
             ),
             "reason_explanation": "Obligatoire seulement en cas de force majeure.",
         }
+
+    def clean_start_at(self):
+        start_at = self.cleaned_data.get("start_at")
+
+        # The start of a suspension must follow retroactivity rule
+        suspension_pk = None
+        referent_date = None
+        if self.instance.pk:
+            suspension_pk = self.instance.pk
+            referent_date = self.instance.created_at.date()
+
+        next_min_start_at = Suspension.next_min_start_at(self.approval, suspension_pk, referent_date, True)
+        if start_at < next_min_start_at:
+            raise ValidationError(
+                f"Pour la date de début de suspension, vous pouvez remonter "
+                f"{Suspension.MAX_RETROACTIVITY_DURATION_DAYS} jours avant la date de saisie "
+                f"et elle ne doit pas chevaucher une suspension déjà existante. "
+                f"Date de début minimum : {next_min_start_at.strftime('%d/%m/%Y')}."
+            )
+
+        return start_at
 
 
 class PoleEmploiApprovalSearchForm(forms.Form):
