@@ -1,12 +1,19 @@
+import datetime
 from datetime import date
 from time import sleep
 
+import httpx  # noqa
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from itou.job_applications.models import JobApplicationPoleEmploiNotificationLog
-from itou.utils.apis.pole_emploi import mise_a_jour_pass_iae  # noqa
-from itou.utils.apis.pole_emploi import PoleEmploiIndividu, PoleEmploiMiseAJourPassIAEException
+from itou.utils.apis.pole_emploi import (  # noqa
+    POLE_EMPLOI_PASS_APPROVED,
+    PoleEmploiIndividu,
+    PoleEmploiMiseAJourPassIAEException,
+    mise_a_jour_pass_iae,
+)
 
 
 class Command(BaseCommand):
@@ -30,6 +37,13 @@ class Command(BaseCommand):
         print(f"API_ESD_KEY:           {settings.API_ESD_KEY}")
         print(f"API_ESD_SECRET:        {settings.API_ESD_SECRET}")
 
+    def get_maj_url(self):
+        url = f"{settings.API_ESD_BASE_URL}/maj-pass-iae/v1/passIAE/miseAjour"
+        if settings.API_ESD_MISE_A_JOUR_PASS_MODE != "production":
+            # The test URL in recette, sandboxed mode
+            url = f"{settings.API_ESD_BASE_URL}/testmaj-pass-iae/v1/passIAE/miseAjour"  # noqa
+        return url
+
     def _notify_pole_employ(self, individual: PoleEmploiIndividu, token: str) -> bool:
         if individual is None or not individual.is_valid():
             # We may not have a valid user (missing NIR, for instance),
@@ -41,18 +55,43 @@ class Command(BaseCommand):
             encrypted_nir = JobApplicationPoleEmploiNotificationLog.get_encrypted_nir_from_individual(
                 individual, token
             )
-            print(encrypted_nir)
+            print(f"encrypted_nir: {encrypted_nir}")
             # 3 requests/second max. I had timeout issues so 1 second takes some margins
             sleep(1)
-        except PoleEmploiMiseAJourPassIAEException as e:
+        except Exception as e:
             print(e)
             return False
-        # Step 3: we finally notify Pole Emploi that something happened for this user
-        # try:
-        #     mise_a_jour_pass_iae(self, mode, encrypted_nir, token)
-        #     sleep(1)
-        # except PoleEmploiMiseAJourPassIAEException as e:
-        #     return False
+
+        DATE_FORMAT = "%Y-%m-%d"
+        today = timezone.now().date()
+        tomorrow = (timezone.now() + datetime.timedelta(days=1)).date()
+        date_debut_pass = today.strftime(DATE_FORMAT)
+        date_fin_pass = tomorrow.strftime(DATE_FORMAT)
+        approval_number = "999992139048"
+        siae_siret = "42373532300044"
+        prescriber_siret = "36252187900034"
+        params = {
+            "idNational": encrypted_nir,
+            "statutReponsePassIAE": POLE_EMPLOI_PASS_APPROVED,
+            "typeSIAE": 837,
+            "dateDebutPassIAE": date_debut_pass,
+            "dateFinPassIAE": date_fin_pass,
+            "numPassIAE": approval_number,
+            "numSIRETsiae": siae_siret,
+            "numSIRETprescripteur": prescriber_siret,
+            "origineCandidature": "DEMA",
+        }
+        print(params)
+        headers = {"Authorization": token, "Content-Type": "application/json"}  # noqa
+        url = self.get_maj_url()  # noqa
+        try:
+            pass
+            # r = httpx.post(url, json=params, headers=headers)
+            # sleep(1)
+            # print(r.content)
+        except Exception as e:
+            print(e)
+            return False
 
         return True
 
@@ -62,7 +101,7 @@ class Command(BaseCommand):
 
         individuals = [
             PoleEmploiIndividu("LEILA", "HABTI", date(1977, 8, 14), "2770824520028"),
-            PoleEmploiIndividu("David", "PICCIN", date(1978, 3, 11), "1780347310022"),
+            PoleEmploiIndividu("DAVID", "PICCIN", date(1978, 3, 11), "1780347310022"),
         ]
         # Step 1: we get the API token
         try:
@@ -73,4 +112,5 @@ class Command(BaseCommand):
             return False
 
         for individual in individuals:
+            print(individual)
             self._notify_pole_employ(individual, token)

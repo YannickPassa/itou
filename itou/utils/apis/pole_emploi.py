@@ -123,6 +123,9 @@ class PoleEmploiIndividu:
             "dateNaissance": self.birthdate,
         }
 
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} {self.nir} {self.birthdate} {self.is_valid()}"
+
 
 @dataclass
 class PoleEmploiIndividuResult:
@@ -183,7 +186,9 @@ def recherche_individu_certifie_api(individu: PoleEmploiIndividu, token: str) ->
     headers = {"Authorization": token}
 
     try:
+        print(individu.as_api_params())
         r = httpx.post(url, json=individu.as_api_params(), headers=headers)
+        print(r.content)
         data = r.json()
         # we can’t use `raise_for_error` since actual data are stored with status code 4xx
         # if r.status_code not in [200, 400, 401, 404, 429]
@@ -241,7 +246,6 @@ def mise_a_jour_pass_iae(job_application, pass_approved_code, encrypted_identifi
             # }
             data = r.json()
             code_sortie = extract_code_sortie(data)
-            print(data)
             # The only way the process can be entirely realized is with
             # code HTTP 200 + a specific code sortie
             if code_sortie != CODE_SORTIE_PASS_IAE_PRESCRIT:

@@ -1018,6 +1018,7 @@ class JobApplicationPoleEmploiNotificationLog(models.Model):
     @staticmethod
     def get_encrypted_nir_from_individual(individual: PoleEmploiIndividu, api_token: str) -> str:
         individual_pole_emploi_result = recherche_individu_certifie_api(individual, api_token)
+        print(individual_pole_emploi_result)
         if individual is not None and individual_pole_emploi_result.is_valid:
             return individual_pole_emploi_result.id_national_demandeur
         else:
