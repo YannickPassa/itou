@@ -61,8 +61,8 @@ class Command(BaseCommand):
         assert settings.API_ESD_MISE_A_JOUR_PASS_MODE == "sandbox"
 
         individuals = [
-            PoleEmploiIndividu("LEILA", "HABTI", date(1977, 8, 14), "277082452002858"),
-            PoleEmploiIndividu("David", "PICCIN", date(1978, 3, 11), "178034731002238"),
+            PoleEmploiIndividu("LEILA", "HABTI", date(1977, 8, 14), "2770824520028"),
+            PoleEmploiIndividu("David", "PICCIN", date(1978, 3, 11), "1780347310022"),
         ]
         # Step 1: we get the API token
         try:
