@@ -241,6 +241,7 @@ def mise_a_jour_pass_iae(job_application, pass_approved_code, encrypted_identifi
             # }
             data = r.json()
             code_sortie = extract_code_sortie(data)
+            print(data)
             # The only way the process can be entirely realized is with
             # code HTTP 200 + a specific code sortie
             if code_sortie != CODE_SORTIE_PASS_IAE_PRESCRIT:
