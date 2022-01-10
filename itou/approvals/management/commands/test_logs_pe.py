@@ -85,10 +85,9 @@ class Command(BaseCommand):
         headers = {"Authorization": token, "Content-Type": "application/json"}  # noqa
         url = self.get_maj_url()  # noqa
         try:
-            pass
-            # r = httpx.post(url, json=params, headers=headers)
-            # sleep(1)
-            # print(r.content)
+            r = httpx.post(url, json=params, headers=headers)
+            sleep(1)
+            print(r.content)
         except Exception as e:
             print(e)
             return False
@@ -101,7 +100,7 @@ class Command(BaseCommand):
 
         individuals = [
             PoleEmploiIndividu("LEILA", "HABTI", date(1977, 8, 14), "2770824520028"),
-            PoleEmploiIndividu("DAVID", "PICCIN", date(1978, 3, 11), "1780347310022"),
+            # PoleEmploiIndividu("DAVID", "PICCIN", date(1978, 3, 11), "1780347310022"),
         ]
         # Step 1: we get the API token
         try:
@@ -114,3 +113,4 @@ class Command(BaseCommand):
         for individual in individuals:
             print(individual)
             self._notify_pole_employ(individual, token)
+            print()
