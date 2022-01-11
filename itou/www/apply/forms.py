@@ -11,6 +11,7 @@ from django_select2.forms import Select2MultipleWidget
 from itou.approvals.models import Approval
 from itou.common_apps.address.forms import MandatoryAddressFormMixin
 from itou.common_apps.resume.forms import ResumeFormMixin
+from itou.eligibility.models import AdministrativeCriteria
 from itou.job_applications.models import JobApplication, JobApplicationWorkflow
 from itou.prescribers.models import PrescriberOrganization
 from itou.siaes.models import Siae
@@ -426,6 +427,11 @@ class FilterJobApplicationsForm(forms.Form):
         required=False, choices=JobApplicationWorkflow.STATE_CHOICES, widget=forms.CheckboxSelectMultiple
     )
     pass_iae_suspended = forms.BooleanField(label="PASS IAE suspendu", required=False)
+    criteria = forms.MultipleChoiceField(
+        required=False,
+        choices=[(c.pk, c.name) for c in AdministrativeCriteria.objects.all()],
+        widget=forms.CheckboxSelectMultiple,
+    )
     start_date = forms.DateField(
         label="Début",
         required=False,

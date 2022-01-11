@@ -16,6 +16,26 @@
 
 
 <form method="get" action="">
+
+    {% if filters_form.criteria %}
+        <h5 class="mt-4">Critères administratifs</h5>
+
+        {% for choice in filters_form.criteria %}
+            <div class="form-check form-check-inline dropdown-item">
+                <input
+                    id="{{ choice.id_for_label }}"
+                    class="form-check-input"
+                    name="{{ choice.data.name }}"
+                    type="checkbox"
+                    value="{{ choice.data.value }}"
+                    {% if choice.data.selected %}checked=""{% endif %}>
+                <label for="{{ choice.id_for_label }}" class="form-check-label">
+                    {{ choice.choice_label }}
+                </label>
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <h5 class="mt-4">Date de candidature</h5>
     {% bootstrap_field filters_form.start_date form_group_class="form_group m-3" %}
     {% bootstrap_field filters_form.end_date form_group_class="form_group m-3" %}
