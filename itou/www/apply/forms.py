@@ -427,6 +427,7 @@ class FilterJobApplicationsForm(forms.Form):
         required=False, choices=JobApplicationWorkflow.STATE_CHOICES, widget=forms.CheckboxSelectMultiple
     )
     pass_iae_suspended = forms.BooleanField(label="PASS IAE suspendu", required=False)
+    pass_iae_in_progress = forms.BooleanField(label="PASS IAE en cours", required=False)
     criteria = forms.MultipleChoiceField(
         required=False,
         choices=[(c.pk, c.name) for c in AdministrativeCriteria.objects.all()],
@@ -479,6 +480,9 @@ class FilterJobApplicationsForm(forms.Form):
         if data.get("pass_iae_suspended"):
             # Filter on the `has_suspended_approval` annotation, which is set in `with_list_related_data()`.
             filters["has_suspended_approval"] = True
+        if data.get("pass_iae_in_progress"):
+            # Filter on the `pass_iae_in_progress` annotation, which is set in `with_list_related_data()`.
+            filters["pass_iae_in_progress"] = True
         if data.get("start_date"):
             filters["created_at__gte"] = data.get("start_date")
         if data.get("end_date"):

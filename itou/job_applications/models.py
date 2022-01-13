@@ -148,6 +148,10 @@ class JobApplicationQuerySet(models.QuerySet):
         has_suspended_approval = Suspension.objects.filter(approval=OuterRef("approval")).in_progress()
         return self.annotate(has_suspended_approval=Exists(has_suspended_approval))
 
+    def with_in_progress_approval(self):
+        pass_iae_in_progress = Approval.objects.filter(pk=OuterRef("approval")).valid()
+        return self.annotate(pass_iae_in_progress=Exists(pass_iae_in_progress))
+
     def with_last_change(self):
         return self.annotate(last_change=Greatest("created_at", Max("logs__timestamp")))
 
@@ -180,7 +184,12 @@ class JobApplicationQuerySet(models.QuerySet):
         # by pk to prevent flakyness in the resulting pagination (a same job application appearing both on page 1
         # and page 2). Note that pk is a hash and not the usual incrementing integer, thus ordering by it does not
         # make any other sense than being deterministic for pagination purposes.
-        return qs.with_has_suspended_approval().with_is_pending_for_too_long().order_by("-created_at", "pk")
+        return (
+            qs.with_has_suspended_approval()
+            .with_is_pending_for_too_long()
+            .with_in_progress_approval()
+            .order_by("-created_at", "pk")
+        )
 
     def with_monthly_counts(self):
         """
