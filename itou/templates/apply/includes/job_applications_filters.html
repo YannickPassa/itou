@@ -36,6 +36,11 @@
         {% endfor %}
     {% endif %}
 
+    {% if filters_form.eligibility_validated %}
+        <h5 class="mt-4">Éligibilité IAE</h5>
+        {% bootstrap_field filters_form.eligibility_validated form_group_class="form_group m-3" %}
+    {% endif %}
+
     <h5 class="mt-4">Date de candidature</h5>
     {% bootstrap_field filters_form.start_date form_group_class="form_group m-3" %}
     {% bootstrap_field filters_form.end_date form_group_class="form_group m-3" %}

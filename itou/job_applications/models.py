@@ -178,6 +178,7 @@ class JobApplicationQuerySet(models.QuerySet):
             "sender_siae",
             "sender_prescriber_organization",
             "to_siae__convention",
+            "eligibility_diagnosis",
         ).prefetch_related("selected_jobs__appellation")
 
         # Many job applications from AI exports share the exact same `created_at` value thus we secondarily order

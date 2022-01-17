@@ -433,6 +433,8 @@ class FilterJobApplicationsForm(forms.Form):
         choices=[(c.pk, c.name) for c in AdministrativeCriteria.objects.all()],
         widget=forms.CheckboxSelectMultiple,
     )
+    eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
+    eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
     start_date = forms.DateField(
         label="Début",
         required=False,
@@ -483,6 +485,8 @@ class FilterJobApplicationsForm(forms.Form):
         if data.get("pass_iae_in_progress"):
             # Filter on the `pass_iae_in_progress` annotation, which is set in `with_list_related_data()`.
             filters["pass_iae_in_progress"] = True
+        if data.get("eligibility_validated"):
+            filters["eligibility_diagnosis__isnull"] = False
         if data.get("start_date"):
             filters["created_at__gte"] = data.get("start_date")
         if data.get("end_date"):
