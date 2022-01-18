@@ -117,12 +117,24 @@ class JobApplicationQuerySet(models.QuerySet):
         Get unique foreign key objects in a single query.
         TODO: move this method in a custom manager since it's not chainable.
         """
-        if fk_field not in ["job_seeker", "sender", "sender_siae", "sender_prescriber_organization", "to_siae"]:
+        if fk_field not in [
+            "job_seeker",
+            "sender",
+            "sender_siae",
+            "sender_prescriber_organization",
+            "to_siae",
+            "selected_jobs",
+        ]:
             raise RuntimeError("Unauthorized fk_field")
 
+        # ManyToMany field need prefetch instead select
+        if fk_field == "selected_jobs":
+            job_applications = self.prefetch_related(fk_field)
+        else:
+            job_applications = self.order_by(fk_field).distinct(fk_field).select_related(fk_field)
         return [
             getattr(job_application, fk_field)
-            for job_application in self.order_by(fk_field).distinct(fk_field).select_related(fk_field)
+            for job_application in job_applications
             if getattr(job_application, fk_field)
         ]
 

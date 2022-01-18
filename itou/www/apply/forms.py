@@ -482,6 +482,8 @@ class FilterJobApplicationsForm(forms.Form):
             filters["created_at__gte"] = data.get("start_date")
         if data.get("end_date"):
             filters["created_at__lte"] = data.get("end_date")
+        if data.get("selected_jobs"):
+            filters["selected_jobs__appellation__code__in"] = data.get("selected_jobs")
 
         filters = [Q(**filters)]
 
@@ -532,17 +534,31 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
     eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
     eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
 
+    selected_jobs = forms.MultipleChoiceField(
+        required=False, label="Fiche de poste", widget=forms.CheckboxSelectMultiple
+    )
+
     def __init__(self, job_applications_qs, *args, **kwargs):
         self.job_applications_qs = job_applications_qs
         super().__init__(*args, **kwargs)
         self.fields["senders"].choices += self._get_choices_for("sender")
         self.fields["job_seekers"].choices = self._get_choices_for("job_seeker")
+        self.fields["selected_jobs"].choices = self._get_choices_for_jobs()
 
     def _get_choices_for(self, user_type):
         users = self.job_applications_qs.get_unique_fk_objects(user_type)
         users = [user for user in users if user.get_full_name()]
         users = [(user.id, user.get_full_name().title()) for user in users]
         return sorted(users, key=lambda l: l[1])
+
+    def _get_choices_for_jobs(self):
+        selected_jobs_manager = self.job_applications_qs.get_unique_fk_objects("selected_jobs")
+        jobs = []
+        for selected_jobs in selected_jobs_manager:
+            for job in selected_jobs.all():
+                jobs.append(job)
+        jobs = [(job.appellation.code, job.appellation.name) for job in jobs]
+        return sorted(jobs, key=lambda l: l[1])
 
     def _humanize_multiple_choice_for_users(self, user_ids, field_name):
         users = User.objects.filter(pk__in=[int(user_id) for user_id in user_ids])

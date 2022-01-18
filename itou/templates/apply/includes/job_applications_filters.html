@@ -89,5 +89,24 @@
         {% bootstrap_field filters_form.job_seekers form_group_class="form_group m-3" show_label=False %}
     {% endif %}
 
+    {% if filters_form.selected_jobs %}
+        <h5 class="mt-4">Fiche de poste</h5>
+
+        {% for choice in filters_form.selected_jobs %}
+            <div class="form-check form-check-inline dropdown-item">
+                <input
+                    id="{{ choice.id_for_label }}"
+                    class="form-check-input"
+                    name="{{ choice.data.name }}"
+                    type="checkbox"
+                    value="{{ choice.data.value }}"
+                    {% if choice.data.selected %}checked=""{% endif %}>
+                <label for="{{ choice.id_for_label }}" class="form-check-label">
+                    {{ choice.choice_label }}
+                </label>
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <button type="submit" class="btn btn-primary">Appliquer</button>
 </form>
