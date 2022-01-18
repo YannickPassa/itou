@@ -8,32 +8,36 @@
 
     <h1 class="h1-hero-c1">Suivi des candidatures</h1>
 
-    {% include "apply/includes/job_applications_filters_prescriber.html" with filters=filters filters_form=filters_form %}
-
-    {% if not job_applications_page %}
-        <h2 class="h1 font-weight-normal text-muted">
-            Aucune candidature pour le moment.
-        </h2>
-    {% endif %}
-
-    {% for job_application in job_applications_page %}
-
-        <div class="card mb-3 mt-4">
-
-            {% include "apply/includes/list_card_header.html" with job_application=job_application %}
-
-            {% include "apply/includes/list_card_body.html" with job_application=job_application %}
-
-            <div class="card-footer">
-                <a href="{% url 'apply:details_for_prescriber' job_application_id=job_application.id %}?back_url={{ request.get_full_path|urlencode }}">
-                    Plus d’informations
-                </a>
-            </div>
+    <div class="row">
+        <div class="col-12 col-md-4">
+            {% include "apply/includes/job_applications_filters_prescriber.html" with filters=filters filters_form=filters_form %}
         </div>
-    {% endfor %}
+        <div class="col-12 col-md-8">
+            {% if not job_applications_page %}
+                <h2 class="font-weight-normal text-muted">
+                    Aucune candidature pour le moment.
+                </h2>
+            {% endif %}
 
-    {% include "includes/pagination.html" with page=job_applications_page %}
+            {% for job_application in job_applications_page %}
 
+                <div class="card mb-3 mt-4">
+
+                    {% include "apply/includes/list_card_header.html" with job_application=job_application %}
+
+                    {% include "apply/includes/list_card_body.html" with job_application=job_application %}
+
+                    <div class="card-footer">
+                        <a href="{% url 'apply:details_for_prescriber' job_application_id=job_application.id %}?back_url={{ request.get_full_path|urlencode }}">
+                            Plus d’informations
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+
+            {% include "includes/pagination.html" with page=job_applications_page %}
+        </div>
+    </div>
 {% endblock %}
 
 {% block script %}
