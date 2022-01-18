@@ -10,7 +10,20 @@
 
     <div class="row">
         <div class="col-12 col-md-4">
-            {% include "apply/includes/job_applications_filters_prescriber.html" with filters=filters filters_form=filters_form %}
+            {% include "apply/includes/job_applications_filter_export_button.html" %}
+            <form method="get" action="">
+                {% include "apply/includes/job_applications_filter_job_seekers.html" %}
+                {% include "apply/includes/job_applications_filter_statut.html" %}
+                {% include "apply/includes/job_applications_filter_to_siaes.html" %}
+                {% include "apply/includes/job_applications_filter_sender.html" %}
+                {% include "apply/includes/job_applications_filter_dates.html" %}
+                {% include "apply/includes/job_applications_filter_selected_jobs.html" %}
+                {% include "apply/includes/job_applications_filter_pass.html" %}
+                {% include "apply/includes/job_applications_filter_eligibility_validated.html" %}
+                {% include "apply/includes/job_applications_filter_criteria.html" %}
+                {% include "apply/includes/job_applications_filter_departments.html" %}
+                <button type="submit" class="btn btn-primary">Appliquer</button>
+            </form>
         </div>
         <div class="col-12 col-md-8">
             {% if not job_applications_page %}
