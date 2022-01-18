@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 from django_select2.forms import Select2MultipleWidget
 
 from itou.approvals.models import Approval
+from itou.common_apps.address.departments import DEPARTMENTS
 from itou.common_apps.address.forms import MandatoryAddressFormMixin
 from itou.common_apps.resume.forms import ResumeFormMixin
 from itou.eligibility.models import AdministrativeCriteria
@@ -482,6 +483,8 @@ class FilterJobApplicationsForm(forms.Form):
             filters["created_at__gte"] = data.get("start_date")
         if data.get("end_date"):
             filters["created_at__lte"] = data.get("end_date")
+        if data.get("departments"):
+            filters["job_seeker__department__in"] = data.get("departments")
         if data.get("selected_jobs"):
             filters["selected_jobs__appellation__code__in"] = data.get("selected_jobs")
 
@@ -533,7 +536,9 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
     )
     eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
     eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
-
+    departments = forms.MultipleChoiceField(
+        required=False, label="Département du candidat", widget=forms.CheckboxSelectMultiple
+    )
     selected_jobs = forms.MultipleChoiceField(
         required=False, label="Fiche de poste", widget=forms.CheckboxSelectMultiple
     )
@@ -543,6 +548,7 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
         super().__init__(*args, **kwargs)
         self.fields["senders"].choices += self._get_choices_for("sender")
         self.fields["job_seekers"].choices = self._get_choices_for("job_seeker")
+        self.fields["departments"].choices = self._get_choices_for_departments()
         self.fields["selected_jobs"].choices = self._get_choices_for_jobs()
 
     def _get_choices_for(self, user_type):
@@ -550,6 +556,11 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
         users = [user for user in users if user.get_full_name()]
         users = [(user.id, user.get_full_name().title()) for user in users]
         return sorted(users, key=lambda l: l[1])
+
+    def _get_choices_for_departments(self):
+        job_seekers = self.job_applications_qs.get_unique_fk_objects("job_seeker")
+        departments = [(user.department, DEPARTMENTS.get(user.department)) for user in job_seekers if user.department]
+        return sorted(departments, key=lambda l: l[1])
 
     def _get_choices_for_jobs(self):
         selected_jobs_manager = self.job_applications_qs.get_unique_fk_objects("selected_jobs")
