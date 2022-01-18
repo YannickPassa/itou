@@ -1,0 +1,6 @@
+{% load bootstrap4 %}
+
+{% if filters_form.eligibility_validated %}
+    <h5 class="mt-4">Éligibilité IAE</h5>
+    {% bootstrap_field filters_form.eligibility_validated form_group_class="form_group m-3" %}
+{% endif %}

@@ -1,0 +1,7 @@
+{% load bootstrap4 %}
+
+{% if filters_form.pass_iae_suspended %}
+    <h5 class="mt-4">PASS IAE</h5>
+    {% bootstrap_field filters_form.pass_iae_suspended form_group_class="form_group m-3" %}
+    {% bootstrap_field filters_form.pass_iae_in_progress form_group_class="form_group m-3" %}
+{% endif %}
