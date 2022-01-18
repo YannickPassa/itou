@@ -426,15 +426,6 @@ class FilterJobApplicationsForm(forms.Form):
     states = forms.MultipleChoiceField(
         required=False, choices=JobApplicationWorkflow.STATE_CHOICES, widget=forms.CheckboxSelectMultiple
     )
-    pass_iae_suspended = forms.BooleanField(label="PASS IAE suspendu", required=False)
-    pass_iae_in_progress = forms.BooleanField(label="PASS IAE en cours", required=False)
-    criteria = forms.MultipleChoiceField(
-        required=False,
-        choices=[(c.pk, c.name) for c in AdministrativeCriteria.objects.all()],
-        widget=forms.CheckboxSelectMultiple,
-    )
-    eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
-    eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
     start_date = forms.DateField(
         label="Début",
         required=False,
@@ -530,6 +521,16 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
     senders = forms.MultipleChoiceField(required=False, label="Nom", widget=Select2MultipleWidget)
 
     job_seekers = forms.MultipleChoiceField(required=False, label="Candidat", widget=Select2MultipleWidget)
+
+    pass_iae_suspended = forms.BooleanField(label="PASS IAE suspendu", required=False)
+    pass_iae_in_progress = forms.BooleanField(label="PASS IAE en cours", required=False)
+    criteria = forms.MultipleChoiceField(
+        required=False,
+        choices=[(c.pk, c.name) for c in AdministrativeCriteria.objects.all()],
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
+    eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
 
     def __init__(self, job_applications_qs, *args, **kwargs):
         self.job_applications_qs = job_applications_qs
