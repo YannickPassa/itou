@@ -560,7 +560,7 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
     def _get_choices_for_departments(self):
         job_seekers = self.job_applications_qs.get_unique_fk_objects("job_seeker")
         departments = [(user.department, DEPARTMENTS.get(user.department)) for user in job_seekers if user.department]
-        return sorted(departments, key=lambda l: l[1])
+        return sorted(set(departments), key=lambda l: l[1])
 
     def _get_choices_for_jobs(self):
         selected_jobs_manager = self.job_applications_qs.get_unique_fk_objects("selected_jobs")
