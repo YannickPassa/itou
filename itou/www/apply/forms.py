@@ -569,7 +569,7 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
             for job in selected_jobs.all():
                 jobs.append(job)
         jobs = [(job.appellation.code, job.appellation.name) for job in jobs]
-        return sorted(jobs, key=lambda l: l[1])
+        return sorted(set(jobs), key=lambda l: l[1])
 
     def _humanize_multiple_choice_for_users(self, user_ids, field_name):
         users = User.objects.filter(pk__in=[int(user_id) for user_id in user_ids])
