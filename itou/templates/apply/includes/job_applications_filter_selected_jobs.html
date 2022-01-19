@@ -1,4 +1,5 @@
 {% if filters_form.selected_jobs %}
+
     <h5 class="mt-4">Fiche de poste</h5>
 
     {% for choice in filters_form.selected_jobs %}
@@ -14,5 +15,7 @@
                 {{ choice.choice_label }}
             </label>
         </div>
+    {% empty %}
+        <p>Aucune candidature n'est rattachée à une fiche de poste.</p>
     {% endfor %}
 {% endif %}

@@ -13,5 +13,7 @@
                 {{ choice.choice_label }}
             </label>
         </div>
+    {% empty %}
+        <p>Les candidats n'ont pas renseigné leur adresse.</p>
     {% endfor %}
 {% endif %}
