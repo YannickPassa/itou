@@ -46,7 +46,10 @@ def list_for_prescriber(request, template_name="apply/list_for_prescriber.html")
     filters_form = PrescriberFilterJobApplicationsForm(job_applications, request.GET or None)
     filters = None
 
-    job_applications = job_applications.with_list_related_data()
+    # Add related data giving the criteria for adding the necessary annotations
+    job_applications = job_applications.not_archived().with_list_related_data(
+        filters_form.data.getlist("criteria", [])
+    )
 
     if filters_form.is_valid():
         job_applications = job_applications.filter(*filters_form.get_qs_filters())
@@ -106,7 +109,10 @@ def list_for_siae(request, template_name="apply/list_for_siae.html"):
     filters_form = SiaeFilterJobApplicationsForm(job_applications, request.GET or None)
     filters = None
 
-    job_applications = job_applications.not_archived().with_list_related_data()
+    # Add related data giving the criteria for adding the necessary annotations
+    job_applications = job_applications.not_archived().with_list_related_data(
+        filters_form.data.getlist("criteria", [])
+    )
 
     if filters_form.is_valid():
         job_applications = job_applications.filter(*filters_form.get_qs_filters())

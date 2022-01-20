@@ -8,13 +8,13 @@ from django.conf import settings
 from django.core import mail
 from django.db import models
 from django.db.models import BooleanField, Case, Count, Exists, Max, OuterRef, Q, Subquery, When
-from django.db.models.functions import Greatest, TruncMonth
+from django.db.models.functions import Coalesce, Greatest, TruncMonth
 from django.urls import reverse
 from django.utils import timezone
 from django_xworkflows import models as xwf_models
 
 from itou.approvals.models import Approval, Suspension
-from itou.eligibility.models import EligibilityDiagnosis
+from itou.eligibility.models import EligibilityDiagnosis, SelectedAdministrativeCriteria
 from itou.job_applications.tasks import huey_notify_pole_employ
 from itou.utils.apis.esd import get_access_token
 from itou.utils.apis.pole_emploi import (
@@ -178,7 +178,31 @@ class JobApplicationQuerySet(models.QuerySet):
             )
         )
 
-    def with_list_related_data(self):
+    def with_last_jobseeker_eligibility_diagnosis(self):
+        """
+        Gives the last eligibility diagnosis for jobseeker because the "eligibility_diagnosis"
+        on `job_applications` model is rarely present.
+        """
+        sub_query = Subquery(
+            (
+                EligibilityDiagnosis.objects.filter(job_seeker=OuterRef("job_seeker"))
+                .order_by("-created_at")
+                .values("id")[:1]
+            ),
+            output_field=models.IntegerField(),
+        )
+        return self.annotate(last_jobseeker_eligibility_diagnosis=Coalesce(sub_query, None))
+
+    def with_last_eligibility_diagnosis_criterion(self, criterion):
+        """
+        Create an annotation by criterion given (used in the filters form)
+        """
+        subquery = SelectedAdministrativeCriteria.objects.filter(
+            eligibility_diagnosis=OuterRef("last_jobseeker_eligibility_diagnosis"), administrative_criteria=criterion
+        )
+        return self.annotate(**{f"last_eligibility_diagnosis_criterion_{criterion}": Exists(subquery)})
+
+    def with_list_related_data(self, criteria=[]):
         """
         Stop the deluge of database queries that is caused by accessing related
         objects in job applications's lists.
@@ -190,19 +214,24 @@ class JobApplicationQuerySet(models.QuerySet):
             "sender_siae",
             "sender_prescriber_organization",
             "to_siae__convention",
-            "eligibility_diagnosis",
         ).prefetch_related("selected_jobs__appellation")
+
+        qs = (
+            qs.with_has_suspended_approval()
+            .with_is_pending_for_too_long()
+            .with_in_progress_approval()
+            .with_last_jobseeker_eligibility_diagnosis()
+        )
+
+        # Adding an annotation by selected criterion
+        for criterion in criteria:
+            qs = qs.with_last_eligibility_diagnosis_criterion(int(criterion))
 
         # Many job applications from AI exports share the exact same `created_at` value thus we secondarily order
         # by pk to prevent flakyness in the resulting pagination (a same job application appearing both on page 1
         # and page 2). Note that pk is a hash and not the usual incrementing integer, thus ordering by it does not
-        # make any other sense than being deterministic for pagination purposes.
-        return (
-            qs.with_has_suspended_approval()
-            .with_is_pending_for_too_long()
-            .with_in_progress_approval()
-            .order_by("-created_at", "pk")
-        )
+        # make any other sense than being deterministic for pagination purposes.s
+        return qs.order_by("-created_at", "pk")
 
     def with_monthly_counts(self):
         """

@@ -478,7 +478,7 @@ class FilterJobApplicationsForm(forms.Form):
             # Filter on the `pass_iae_in_progress` annotation, which is set in `with_list_related_data()`.
             filters["pass_iae_in_progress"] = True
         if data.get("eligibility_validated"):
-            filters["eligibility_diagnosis__isnull"] = False
+            filters["last_jobseeker_eligibility_diagnosis__isnull"] = False
         if data.get("start_date"):
             filters["created_at__gte"] = data.get("start_date")
         if data.get("end_date"):
@@ -487,6 +487,11 @@ class FilterJobApplicationsForm(forms.Form):
             filters["job_seeker__department__in"] = data.get("departments")
         if data.get("selected_jobs"):
             filters["selected_jobs__appellation__code__in"] = data.get("selected_jobs")
+        if data.get("criteria"):
+            # Filter on the `last_eligibility_diagnosis_criterion_{criterion}` annotation,
+            # which is set in `with_list_related_data()`.
+            for criterion in data.get("criteria"):
+                filters[f"last_eligibility_diagnosis_criterion_{criterion}"] = True
 
         filters = [Q(**filters)]
 
