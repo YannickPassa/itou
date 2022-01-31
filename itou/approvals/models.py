@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
-from django.utils.functional import cached_property, classproperty
+from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from unidecode import unidecode
 
@@ -440,6 +440,15 @@ class Suspension(models.Model):
         SUSPENDED_CONTRACT = "CONTRACT_SUSPENDED", "Contrat de travail suspendu depuis plus de 15 jours"
         BROKEN_CONTRACT = "CONTRACT_BROKEN", "Contrat de travail rompu"
         FINISHED_CONTRACT = "FINISHED_CONTRACT", "Contrat de travail terminé"
+        APPROVAL_BETWEEN_CTA_MEMBERS = (
+            "APPROVAL_BETWEEN_CTA_MEMBERS",
+            "Situation faisant l'objet d'un accord entre les acteurs membres du CTA (Comité technique d'animation)",
+        )
+        # The following choice must only be available for EI and ACI SIAE kinds
+        CONTRAT_PASSERELLE = (
+            "CONTRAT_PASSERELLE",
+            "Bascule dans l'expérimentation contrat passerelle",
+        )
 
         # Old reasons kept for history. See cls.displayed_choices
         SICKNESS = "SICKNESS", "Arrêt pour longue maladie"
@@ -458,18 +467,28 @@ class Suspension(models.Model):
             ),
         )
 
-        @classproperty
-        def displayed_choices(cls):
+        @staticmethod
+        def displayed_choices_for_siae(siae):
             """
             Old reasons are not showed anymore but kept to let users still see
             a nice label in their dashboard instead of just the enum stored in the DB.
+            If the given SIAE is an ACI or EI, it can now use the 'CONTRAT_PASSERELLE' suspension reason.
             """
-            reasons = [cls.SUSPENDED_CONTRACT, cls.BROKEN_CONTRACT, cls.FINISHED_CONTRACT]
+            reasons = [
+                Suspension.Reason.SUSPENDED_CONTRACT,
+                Suspension.Reason.BROKEN_CONTRACT,
+                Suspension.Reason.FINISHED_CONTRACT,
+                Suspension.Reason.APPROVAL_BETWEEN_CTA_MEMBERS,
+            ]
+            if siae.kind in [siae.KIND_ACI, siae.KIND_EI]:
+                reasons.append(Suspension.Reason.CONTRAT_PASSERELLE)
             return [(reason.value, reason.label) for reason in reasons]
 
     REASONS_TO_UNSUSPEND = [
         Reason.BROKEN_CONTRACT.value,
         Reason.FINISHED_CONTRACT.value,
+        Reason.APPROVAL_BETWEEN_CTA_MEMBERS.value,
+        Reason.CONTRAT_PASSERELLE.value,
     ]
 
     approval = models.ForeignKey(Approval, verbose_name="PASS IAE", on_delete=models.CASCADE)
