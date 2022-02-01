@@ -1,4 +1,6 @@
 import datetime
+import os
+import unittest
 from dataclasses import dataclass
 
 import pandas
@@ -47,6 +49,7 @@ from itou.users.management.commands.import_ai_employees import (
 from itou.users.models import User
 
 
+@unittest.skipUnless(os.getenv("CI", False), "It is a long management command and normally not subject to change!")
 class DeduplicateJobSeekersManagementCommandsTest(TestCase):
     """
     Test the deduplication of several users.
@@ -216,6 +219,7 @@ class CleanedAiCsvFileMock(AiCSVFileMock):
     commentaire: str = ""
 
 
+@unittest.skipUnless(os.getenv("CI", False), "It is a long management command and normally not subject to change!")
 class ImportAiEmployeesManagementCommandTest(TestCase):
     """November 30th we imported AI employees.
     See users.management.commands.import_ai_employees.
