@@ -11,7 +11,7 @@
         <div class="card-body">
             {% comment %} SIAE Title and adress {% endcomment %}
             <div class="border-bottom">
-                <h4>
+                <h4 class="h3">
                     <b><abbr title="{{ siae.get_kind_display }}">{{ siae.kind }}</abbr></b>
                     -
                     <a href="{{ siae.get_card_url }}?back_url={{ request.get_full_path|urlencode }}" class="matomo-event" data-matomo-category="candidature" data-matomo-action="clic" data-matomo-option="clic-structure">
@@ -28,11 +28,11 @@
                 {% else %}
                     <span class="badge badge-pill badge-warning">Pas de recrutement en cours</span>
                 {% endif %}
-                <h1 class="h2 my-4 title-with-badge">
+                <h1 class="h1 my-4 title-with-badge">
                     {{ job.display_name }}
                 </h1>
                 {% if job.description %}
-                    <h6>Descriptif</h6>
+                    <h6 class="h5">Descriptif</h6>
                     {{ job.description|linebreaks }}
                 {% else %}
                     <p class="mb-4">
@@ -72,7 +72,7 @@
     </div>
     {% if others_active_jobs and not siae.block_job_applications %}
         <div class="pt-4">
-            <h2 class="h3">Consulter le(s) recrutement(s) en cours dans cette structure</h2>
+            <h2 class="h1">Consulter le(s) recrutement(s) en cours dans cette structure</h2>
             {% for other_job in others_active_jobs %}
                     <a href="{{ other_job.get_absolute_url }}?back_url={{ request.get_full_path|urlencode }}" class="matomo-event btn btn-outline-primary mb-2" data-matomo-category="candidature" data-matomo-action="clic" data-matomo-option="clic-metiers">
                         {{ other_job.display_name }}

@@ -5,7 +5,7 @@
 
 {% block content %}
 
-<h1>Créer/rejoindre une nouvelle structure</h1>
+<h1 class="h1-hero-c1">Créer/rejoindre une nouvelle structure</h1>
 
 <form method="post" action="" class="js-prevent-multiple-submit">
 
@@ -22,10 +22,12 @@
 
     {% if form.non_field_errors %}
         <div class="alert alert-danger alert-dismissible alert-link" role="alert">
-            <button class="close" type="button" data-dismiss="alert" aria-label="close">&#215;</button>
             {% for error in form.non_field_errors %}
                 {{ error | safe }}{% if not forloop.last %}<br>{% endif %}
             {% endfor %}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Fermer">
+                <i class="ri-close-line"></i>
+            </button>               
         </div>
     {% endif %}
 

@@ -8,7 +8,7 @@
 <div class="sticky-top shadow bg-danger text-white text-center layout" style="z-index:2;">
     <div class="layout-content py-0">
         <div class="d-flex align-items-center text-center p-1">
-            <h4 class="font-weight-bold flex-grow-1 mb-0 text-white h2">{{ ITOU_ENVIRONMENT }}</h4>
+            <h4 class="h3 font-weight-bold flex-grow-1 mb-0 text-white h1">{{ ITOU_ENVIRONMENT }}</h4>
             {% if not user.is_authenticated %}
                 <div>
                     <button class="btn btn-sm btn-light border" data-toggle="modal" data-target="#testAccountsModal">
@@ -20,11 +20,14 @@
     </div>
 </div>
 
-<div class="modal fade" id="testAccountsModal" tabindex=-1 role="dialog">
+<div class="modal fade" id="testAccountsModal" tabindex=-1 role="dialog" aria-modal="true" aria-labelledby="testAccountsModalTitle">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title font-weight-demo m-auto">Comptes de démonstration</h3>
+                <h3 class="modal-title" id="testAccountsModalTitle">Comptes de démonstration</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                    <i class="ri-close-line"></i>
+                </button>                
             </div>
             <div class="modal-body">
 
@@ -35,14 +38,14 @@
                 </p>
 
                 <div class="pt-2 pb-5">
-                    <h4 class="text-center pb-3">Employeurs</h4>
+                    <h4 class="h3 text-center pb-3">Employeurs</h4>
                     <div class="card-deck">
                         {% employers_accounts_tag as employers_accounts %}
                         {% for account in employers_accounts %}
                             <div class="card">
                                 <div class="card-body mb-auto py-0">
                                     <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;">
-                                    <h5 class="card-title h6 font-weight-bold text-center">{{ account.title }}</h5>
+                                    <h5 class="h5 card-title font-weight-bold text-center">{{ account.title }}</h5>
                                 </div>
                                 <div class="p-3 text-center">
                                     <p class="card-text">{{ account.description }}</p>
@@ -59,14 +62,14 @@
                 </div>
 
                 <div class="pb-5">
-                    <h4 class="text-center pb-3">Prescripteurs</h4>
+                    <h4 class="h3 text-center pb-3">Prescripteurs</h4>
                     <div class="card-deck">
                         {% prescribers_accounts_tag as prescribers_accounts %}
                         {% for account in prescribers_accounts %}
                             <div class="card">
                                 <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;">
                                 <div class="card-body">
-                                    <h5 class="card-title h6 font-weight-bold text-center">{{ account.title|safe }}</h5>
+                                    <h5 class="h5 card-title h6 font-weight-bold text-center">{{ account.title|safe }}</h5>
                                     <p class="card-text">{{ account.description }}</p>
                                 </div>
                                 <div class="card-footer text-center">
@@ -80,14 +83,14 @@
                 </div>
 
                 <div class="pb-5">
-                    <h4 class="text-center pb-3">Candidat</h4>
+                    <h4 class="h3 text-center pb-3">Candidat</h4>
                     <div class="card-deck w-sm-33 m-auto">
                         {% job_seekers_accounts_tag as job_seekers_accounts %}
                         {% for account in job_seekers_accounts %}
                             <div class="card">
                                 <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:10rem;">
                                 <div class="card-body">
-                                    <h5 class="card-title h6 font-weight-bold text-center mb-0">{{ account.title }}</h5>
+                                    <h5 class="h5 card-title font-weight-bold text-center mb-0">{{ account.title }}</h5>
                                     <p class="card-text">{{ account.description }}</p>
                                 </div>
                                 <div class="card-footer text-center">
@@ -100,20 +103,19 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                </div>
-
-                <div class="d-none">
-                    <form id="testAccountsForm" method="post" action="{% url 'account_login' %}">
-                        {% csrf_token %}
-                        <input type="email" name="login">
-                        <input type="password" name="password">
-                        <input type="hidden" name="account_type">
-                    </form>
-                </div>
-
             </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-primary" data-dismiss="modal">Fermer</button>
+            </div>
+
+            <div class="d-none">
+                <form id="testAccountsForm" method="post" action="{% url 'account_login' %}">
+                    {% csrf_token %}
+                    <input type="email" name="login">
+                    <input type="password" name="password">
+                    <input type="hidden" name="account_type">
+                </form>
+            </div>            
         </div>
     </div>
 </div>

@@ -33,11 +33,17 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <nav role="navigation" aria-label="Accès rapide" tabindex="1" class="sr-only">
+        <ul>
+            <li><a href="#nav-primary">Aller au menu principal</a></li>
+            <li><a href="#main">Aller au contenu principal</a></li>
+        </ul>
+    </nav>
 
     {% include "includes/test_accounts.html" %}
     {% include "layout/_header.html" %}
 
-    <main class="s-main bg-gray-400">
+    <main id="main" role="main" class="s-main bg-gray-400">
 
         <div class="container container-messages">
             {% block messages %}
@@ -57,6 +63,10 @@
     </main>
 
     {% include "layout/_footer.html" %}
+
+    <div class="sr-only">
+        <a href="#header">Retour au début de la page</a>
+    </div>
 
     {% import_static_JS_theme_inclusion %}
     <script src="https://cdn.jsdelivr.net/npm/jquery-ui_1.12@1.12.0/jquery-ui.min.js" integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E=" crossorigin="anonymous"></script>
@@ -198,8 +208,8 @@
         </div>
     {% else %}
         {# Sticky FAQ link is not displayed on HP and on small devices #}
-        <div class="rounded-pill bg-white shadow fixed-sm-bottom d-none d-sm-block m-4 py-2 px-3 text-center text-sm-right">
-            <a href="{{ ITOU_ASSISTANCE_URL }}" rel="noopener" target="_blank" aria-label="Ouverture dans un nouvel onglet">
+        <div class="rounded-pill bg-white shadow fixed-sm-bottom d-none d-sm-inline-block m-4 py-2 px-3 text-center text-md-right">
+            <a href="{{ ITOU_ASSISTANCE_URL }}" rel="noopener" target="_blank" class="text-decoration-none" title="Besoin d'aide ? (Ouverture dans un nouvel onglet)">
                 Besoin d'aide ?
                 {% include "includes/icon.html" with icon="external-link" %}
             </a>

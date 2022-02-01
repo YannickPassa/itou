@@ -6,7 +6,7 @@
 
 {% block right_content %}
     <div class="mt-5">
-        <h1>Inscription <span class="text-muted">candidat</span></h1>
+        <h1 class="h1-hero-c1">Inscription <span class="text-muted">candidat</span></h1>
         <form method="post" action="{% url 'signup:job_seeker_nir' %}" class="js-prevent-multiple-submit js-format-nir">
 
             {% csrf_token %}
@@ -48,7 +48,7 @@
 
 {% block left_content %}
     <div class="my-5 text-center">
-        <h2 class="ff-extra-01">Où trouver mon numéro de sécurité sociale ?</h2>
+        <h2 class="h1 ff-extra-01">Où trouver mon numéro de sécurité sociale ?</h2>
         <img class="mt-5 img-fluid" src="{% static 'img/carte_vitale.png' %}">
         <p class="ff-extra-01 mt-0">Il est présent à cet endroit sur votre carte Vitale.</p>
     </div>

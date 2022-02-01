@@ -24,13 +24,13 @@
 
 {% block content %}
 
-    <h2>Rechercher des prescripteurs habilités</h2>
+    <h2 class="h1">Rechercher des prescripteurs habilités</h2>
 
     <form id="search-form" method="get" action="" class="d-block mb-5">
         {% include "search/includes/prescribers_search_form.html" with form=form %}
 
         {% if form.is_valid %}
-            <h3>
+            <h3 class="h2">
                 Prescripteurs à <b>{{ distance }} km</b> du centre de <b>{{ city }}</b>
             </h3>
         {% endif %}
@@ -52,17 +52,17 @@
                 {% for prescriber_org in prescriber_orgs_page %}
                     <div class="card my-4">
                         <div class="card-body">
-                            <h3 class="card-title">
+                            <h3 class="h2 card-title">
                                 <a href="{{ prescriber_org.get_card_url }}?back_url={{ request.get_full_path|urlencode }}">
                                     {{ prescriber_org.name }}
                                 </a>
                             </h3>
-                            <h6 class="card-subtitle mb-2 text-muted">
+                            <h6 class="h5 card-subtitle mb-2 text-muted">
                                 {{ prescriber_org.get_kind_display }}
                                 {% if prescriber_org.is_brsa %}(conventionné par le Département pour le suivi des BRSA){% endif %}
                             </h6>
                             <hr>
-                            <h6 class="card-subtitle mb-2 text-muted">
+                            <h6 class="h5 card-subtitle mb-2 text-muted">
                                 {{ prescriber_org.address_on_one_line }}
                             </h6>
                             <small class="card-text">

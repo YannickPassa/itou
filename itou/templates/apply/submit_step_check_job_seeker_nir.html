@@ -41,13 +41,13 @@
 
         {% if preview_mode %}
             <!-- Modal -->
-            <div class="modal" id="nir-confirmation-modal" tabindex="-1" aria-labelledby="nir-confirmation-label" aria-hidden="true">
+            <div class="modal" id="nir-confirmation-modal" tabindex="-1" role="dialog" aria-labelledby="nir-confirmation-label" aria-modal="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="nir-confirmation-label">Utilisateur trouvé</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
+                            <h3 class="modal-title" id="nir-confirmation-label">Utilisateur trouvé</h3>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                                <i class="ri-close-line"></i>
                             </button>
                         </div>
                         <div class="modal-body">
@@ -59,11 +59,11 @@
                         <div class="modal-footer">
                             {% buttons %}
                                 {# Reload this page with a new form. #}
-                                <button type="submit" name="cancel" value="1" class="btn btn-secondary">
+                                <button type="submit" name="cancel" value="1" class="btn btn-sm btn-secondary">
                                     Ce n'est pas mon candidat
                                 </button>
                                 {# Go to the next step. #}
-                                <button type="submit" name="confirm" value="1" class="btn btn-primary">
+                                <button type="submit" name="confirm" value="1" class="btn btn-sm btn-primary">
                                     Continuer
                                 </button>
                             {% endbuttons %}
@@ -85,7 +85,7 @@
 {% endblock %}
 
 {% block left_column %}
-    <h2 class="ff-extra-01">Où trouver {% if request.user.is_job_seeker %}mon{% else %}le{% endif %} numéro de sécurité sociale ?</h2>
+    <h2 class="h1 ff-extra-01">Où trouver {% if request.user.is_job_seeker %}mon{% else %}le{% endif %} numéro de sécurité sociale ?</h2>
     <img class="mt-5 img-fluid" src="{% static 'img/carte_vitale.png' %}">
     <p class="ff-extra-01 mt-0">Il est présent à cet endroit sur {% if request.user.is_job_seeker %}votre{% else %}la{% endif %} carte Vitale.</p>
 {% endblock %}

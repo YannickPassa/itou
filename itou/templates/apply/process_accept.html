@@ -14,7 +14,7 @@
         {% csrf_token %}
 
         {% if form_address or form_pe_status %}
-            <h3>Candidat</h3>
+            <h3 class="h2">Candidat</h3>
         {% endif %}
 
         {% if form_pe_status %}
@@ -33,14 +33,14 @@
 
         <div class="mt-5">
 
-            <h3>Embauche</h3>
+            <h3 class="h2">Embauche</h3>
             {% bootstrap_form form_accept alert_error_type="all" %}
 
         </div>
 
         {% buttons %}
             {% if job_application.to_siae.is_subject_to_eligibility_rules %}
-                <h4 class="text-center mt-5">
+                <h4 class="h3 text-center mt-5">
                     Obtention d'un PASS IAE
                 </h4>
                 <p class="text-center pt-2">

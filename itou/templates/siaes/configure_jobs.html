@@ -6,13 +6,13 @@
 {% block content %}
 
     <p class="h2 mb-1">{{ siae.display_name }}</p>
-    <h1 class="text-muted">Gérer les métiers et recrutements</h1>
+    <h1 class="h1-hero-c1 text-muted">Gérer les métiers et recrutements</h1>
 
 
     <form method="post" action="" class="d-block mt-3 js-prevent-multiple-submit">
         {% csrf_token %}
         <div class="border-top py-4">
-            <h3>Bloquer les nouvelles candidatures</h3>
+            <h3 class="h2">Bloquer les nouvelles candidatures</h3>
             <div class="custom-control custom-switch is-rtl mb-3">
                 <input name="block_job_applications"
                     type="checkbox" id="block_job_applications"
@@ -28,7 +28,7 @@
             {% endif %}
         </div>
         <div class="border-top py-3">
-            <h3>Métiers et recrutements</h3>
+            <h3 class="h2">Métiers et recrutements</h3>
 
             {% include "siaes/includes/_alert_configure_job.html" with errors=errors%}
 
@@ -68,20 +68,20 @@
         </div>
 
         <div id="preview"></div>
-        <div class="modal modal-md fade" id="js-modal-preview" tabindex="-1" aria-labelledby="modalPrevisualisationTitle" aria-hidden="true">
+        <div class="modal modal-md fade" id="js-modal-preview" tabindex="-1" role="dialog" aria-labelledby="modalPrevisualisationTitle" aria-modal="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 id="modalPrevisualisationTitle" class="modal-title">Vu de votre structure depuis la liste de résultats</h3>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                            <i class="ri-close-line"></i>
                         </button>
                     </div>
                     <div id="js-modal-preview-body" class="modal-body">
                     </div>
                     <div class="modal-footer">
-                        <a class="btn" href="{% url 'dashboard:index' %}" data-dismiss="modal">Annuler</a>
-                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:index' %}" data-dismiss="modal">Annuler</a>
+                        <button type="submit" class="btn btn-sm btn-primary">Enregistrer les modifications</button>
                     </div>
                 </div>
             </div>

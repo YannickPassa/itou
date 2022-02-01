@@ -8,8 +8,8 @@
 {% block content %}
 
 
-    <h1>Candidatures reçues</h1>
-    <h2 class="text-muted">{{ siae.display_name }}</h2>
+    <h1 class="h1-hero-c1">Candidatures reçues</h1>
+    <h2 class="h1 text-muted">{{ siae.display_name }}</h2>
 
     {% if siae.is_subject_to_eligibility_rules %}
         <div class="alert alert-emploi mt-3" role="alert">
@@ -21,7 +21,7 @@
     {% include "apply/includes/job_applications_filters.html" with filters=filters filters_form=filters_form %}
 
     {% if not job_applications_page %}
-        <h2 class="font-weight-normal text-muted mt-4">
+        <h2 class="h1 font-weight-normal text-muted mt-4">
             Aucune candidature pour le moment.
         </h2>
     {% endif %}
@@ -41,6 +41,13 @@
                             Gérer la candidature
                         </a>
                     </div>
+                    {% if job_application.can_download_approval_as_pdf %}
+                        <div class="col-sm-3">
+                            <a class="btn btn-link text-decoration-none disable-on-click matomo-event hidden" href="{% url 'approvals:approval_as_pdf' job_application_id=job_application.id %}" data-matomo-category="agrement" data-matomo-action="telechargement-pdf" data-matomo-option="liste-candidatures">
+                                Télécharger le PASS IAE
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 

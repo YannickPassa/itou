@@ -9,11 +9,11 @@
 
 {% block content %}
 
-    <h1>
+    <h1 class="h1-hero-c1">
         Candidature de
         <span class="text-muted">{{ job_application.job_seeker.get_full_name|title }}</span>
     </h1>
-    <p class="h3">{% include "apply/includes/state_badge.html" with job_application=job_application %}</p>
+    <p class="h2">{% include "apply/includes/state_badge.html" with job_application=job_application %}</p>
 
     {% if job_application.to_siae.is_subject_to_eligibility_rules %}
 
@@ -49,6 +49,16 @@
                                 href="{% url 'approvals:declare_prolongation' approval_id=job_application.approval.id %}?back_url={{ request.get_full_path|urlencode }}"
                                 class="btn btn btn-link">
                                     Prolonger
+                            </a>
+                        {% endif %}
+                        {% if job_application.can_download_approval_as_pdf %}
+                            <a
+                                href="{% url 'approvals:approval_as_pdf' job_application_id=job_application.id %}"
+                                class="btn btn-outline-primary float-right disable-on-click matomo-event"
+                                data-matomo-category="agrement"
+                                data-matomo-action="telechargement-pdf"
+                                data-matomo-option="details-candidature">
+                                    Télécharger le PASS IAE
                             </a>
                         {% endif %}
                     {% endif %}
