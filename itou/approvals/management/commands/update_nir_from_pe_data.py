@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 from tqdm import tqdm
 
 from itou.approvals.models import PoleEmploiApproval
@@ -62,9 +61,7 @@ class Command(BaseCommand):
             - we choose not to use the pole_emploi_id contained in the excel export,
             due to the low quality of the data.
         """
-        pe_approvals = PoleEmploiApproval.objects.filter(
-            Q(number=beneficiaire.agrement) | Q(number=beneficiaire.agrement[:12])
-        )
+        pe_approvals = PoleEmploiApproval.objects.filter(number__startswith=beneficiaire.agrement[:12])
         if len(pe_approvals) > 0:
             for pe_approval in pe_approvals:
                 if self.validate(pe_approval, beneficiaire):
@@ -108,6 +105,9 @@ class Command(BaseCommand):
             self.dump_queue()
 
     def dump_queue(self, force_dump=False):
+        # The queue size is set to a low number > 1 in order to:
+        # - minimize the amount of updates
+        # - not crash. With 10000, the update hangs
         if not self.dry_run and (force_dump or len(self.queue) > 1000):
             PoleEmploiApproval.objects.bulk_update(self.queue, ["nir", "ntt_nia"])
             self.queue = []
