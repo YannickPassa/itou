@@ -51,6 +51,8 @@ class Command(BaseCommand):
     errors = []
     found_pe_approvals = 0
     updated_pe_approval = 0
+    nb_nir = 0
+    nb_ntt_nia = 0
 
     def process(self, beneficiaire: PeBeneficiaire):
         """
@@ -97,8 +99,10 @@ class Command(BaseCommand):
         try:
             validate_nir(beneficiaire.nir)
             pe_approval.nir = beneficiaire.nir
+            self.nb_nir += 1
         except ValidationError as e:  # noqa
-            pe_approval.nia_ntt = beneficiaire.nir
+            pe_approval.ntt_nia = beneficiaire.nir
+            self.nb_ntt_nia += 1
         self.updated_pe_approval += 1
         if not self.dry_run:
             self.queue.append(pe_approval)
@@ -163,3 +167,5 @@ class Command(BaseCommand):
         self.stdout.write(f"nb rows in export: {nb_lines}")
         self.stdout.write(f"nb found pe approvals: {self.found_pe_approvals}")
         self.stdout.write(f"nb updated: {self.updated_pe_approval}")
+        self.stdout.write(f"nb nir: {self.nb_nir}")
+        self.stdout.write(f"nb ntt_nia: {self.nb_ntt_nia}")
