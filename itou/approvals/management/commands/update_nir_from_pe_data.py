@@ -72,14 +72,34 @@ class Command(BaseCommand):
 
             self.found_pe_approvals += 1
         else:
-            # pe_approvals_by_pe_id = PoleEmploiApproval.objects.filter(pole_emploi_id=beneficiaire.pole_emploi_id)
-            self.agrement_not_found.append(
-                {
-                    "pe_pole_emploi_id": beneficiaire.pole_emploi_id,
-                    "pe_nom_naissance": beneficiaire.nom_naissance,
-                    "pe_prenom": beneficiaire.prenom,
-                }
-            )
+            pe_approvals_by_pe_id = PoleEmploiApproval.objects.filter(pole_emploi_id=beneficiaire.pole_emploi_id)
+            if len(pe_approvals_by_pe_id) > 0:
+                for approval in pe_approvals_by_pe_id:
+                    self.agrement_not_found.append(
+                        {
+                            "pe_pole_emploi_id": beneficiaire.pole_emploi_id,
+                            "pe_prenom": beneficiaire.prenom,
+                            "pe_nom_naissance": beneficiaire.nom_naissance,
+                            "pe_numero_agrement": beneficiaire.agrement,
+                            "itou_numero_agrement": approval.number,
+                            "itou_prenom": approval.first_name,
+                            "itou_nom_naissance": approval.birth_name,
+                            "pe_nir": beneficiaire.nir,
+                        }
+                    )
+            else:
+                self.agrement_not_found.append(
+                    {
+                        "pe_pole_emploi_id": beneficiaire.pole_emploi_id,
+                        "pe_prenom": beneficiaire.prenom,
+                        "pe_nom_naissance": beneficiaire.nom_naissance,
+                        "pe_numero_agrement": beneficiaire.agrement,
+                        "itou_numero_agrement": "",
+                        "itou_prenom": "",
+                        "itou_nom_naissance": "",
+                        "pe_nir": beneficiaire.nir,
+                    }
+                )
 
     def validate(self, pe_approval, beneficiaire):
         # We match with `in` instead of == : often, everything matches except the first name
@@ -135,10 +155,11 @@ class Command(BaseCommand):
 
     def dump_agrements_not_found(self):
         if len(self.agrement_not_found) > 0:
-            cols = self.agrement_not_found[0].keys()
-            csv_writer = csv.DictWriter(self.stdout, cols)
-            csv_writer.writeheader()
-            csv_writer.writerows(self.agrement_not_found)
+            with open("agrements_not_found.csv", "w") as outfile:
+                cols = self.agrement_not_found[0].keys()
+                csv_writer = csv.DictWriter(outfile, cols)
+                csv_writer.writeheader()
+                csv_writer.writerows(self.agrement_not_found)
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -174,7 +195,7 @@ class Command(BaseCommand):
             # and I’ve found no simple way to make the retrieval/update very fast.
             # Total running time for 405_000 rows: ~4mn
             nb_lines = len(beneficiaires)
-            for beneficiaire in beneficiaires[:10000]:
+            for beneficiaire in beneficiaires:
                 pbar.update(1)
                 self.process(beneficiaire)
             pbar.close()
