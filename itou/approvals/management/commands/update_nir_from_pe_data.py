@@ -53,6 +53,7 @@ class Command(BaseCommand):
     updated_pe_approval = 0
     nb_nir = 0
     nb_ntt_nia = 0
+    agrement_not_found = []
 
     def process(self, beneficiaire: PeBeneficiaire):
         """
@@ -70,6 +71,15 @@ class Command(BaseCommand):
                     self.prepare_update_pe_approval(beneficiaire, pe_approval)
 
             self.found_pe_approvals += 1
+        else:
+            # pe_approvals_by_pe_id = PoleEmploiApproval.objects.filter(pole_emploi_id=beneficiaire.pole_emploi_id)
+            self.agrement_not_found.append(
+                {
+                    "pe_pole_emploi_id": beneficiaire.pole_emploi_id,
+                    "pe_nom_naissance": beneficiaire.nom_naissance,
+                    "pe_prenom": beneficiaire.prenom,
+                }
+            )
 
     def validate(self, pe_approval, beneficiaire):
         # We match with `in` instead of == : often, everything matches except the first name
@@ -123,6 +133,13 @@ class Command(BaseCommand):
             csv_writer.writeheader()
             csv_writer.writerows(self.errors)
 
+    def dump_agrements_not_found(self):
+        if len(self.agrement_not_found) > 0:
+            cols = self.agrement_not_found[0].keys()
+            csv_writer = csv.DictWriter(self.stdout, cols)
+            csv_writer.writeheader()
+            csv_writer.writerows(self.agrement_not_found)
+
     def add_arguments(self, parser):
         parser.add_argument(
             "--file-path",
@@ -157,12 +174,13 @@ class Command(BaseCommand):
             # and I’ve found no simple way to make the retrieval/update very fast.
             # Total running time for 405_000 rows: ~4mn
             nb_lines = len(beneficiaires)
-            for beneficiaire in beneficiaires:
+            for beneficiaire in beneficiaires[:10000]:
                 pbar.update(1)
                 self.process(beneficiaire)
             pbar.close()
         self.dump_queue(force_dump=True)
-        self.dump_errors()
+        # self.dump_errors()
+        self.dump_agrements_not_found()
 
         self.stdout.write(f"nb rows in export: {nb_lines}")
         self.stdout.write(f"nb found pe approvals: {self.found_pe_approvals}")
