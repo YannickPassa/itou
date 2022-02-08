@@ -1030,6 +1030,9 @@ class PoleEmploiApprovalManager(models.Manager):
     def without_nir_ntt_or_nia(self):
         return self.filter(Q(nir=None) & Q(ntt_nia=None))
 
+    def with_nir_ntt_or_nia(self):
+        return self.filter(Q(nir__isnull=False) | Q(ntt_nia__isnull=False))
+
 
 class PoleEmploiApproval(CommonApprovalMixin):
     """
@@ -1091,6 +1094,8 @@ class PoleEmploiApproval(CommonApprovalMixin):
     # https://www.net-entreprises.fr/astuces/identification-des-salaries%E2%80%AF-nir-nia-et-ntt/
     # NTT max length = 40 chars, max duration = 3 months
     ntt_nia = models.CharField(verbose_name="NTT ou NIA", max_length=40, null=True, blank=True)
+
+    merged = models.BooleanField(default=False, verbose_name="Agrément fusionné avec les doublons?")
 
     objects = PoleEmploiApprovalManager.from_queryset(CommonApprovalQuerySet)()
 
