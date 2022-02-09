@@ -4,6 +4,7 @@ from typing import Optional
 
 import httpx
 from django.conf import settings
+from unidecode import unidecode
 
 from itou.siaes.models import Siae
 
@@ -94,8 +95,8 @@ class PoleEmploiMiseAJourPassIAEException(Exception):
 
 class PoleEmploiIndividu:
     def __init__(self, first_name: str, last_name: str, birthdate, nir: str):
-        self.first_name = first_name.upper()
-        self.last_name = last_name.upper()
+        self.first_name = unidecode(first_name).upper()
+        self.last_name = unidecode(last_name).upper()
         self.birthdate = birthdate.strftime("%Y-%m-%d") if birthdate else ""
         self.nir = nir
 

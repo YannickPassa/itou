@@ -720,6 +720,17 @@ class ApiEntrepriseTest(SimpleTestCase):
         self.assertTrue(etablissement.is_head_office)
 
 
+class PoleEmploiIndividuTest(TestCase):
+    """Test cases related to transforming user data"""
+
+    def test_name_conversion(self):
+        """first name and last name should not have accents, because pole emploi cannot handle them"""
+        individual = PoleEmploiIndividu("aéïèêë", "gh'îkñ", datetime.date(1979, 6, 3), "152062441001270")
+
+        self.assertEqual(individual.first_name, "aeieee")
+        self.assertEqual(individual.last_name, "gh'ikn")
+
+
 class PoleEmploiTest(TestCase):
     """All the test cases around function recherche_individu_certifie_api and mise_a_jour_pass_iae"""
 
