@@ -8,7 +8,7 @@ from itou.approvals.admin_forms import ApprovalAdminForm
 from itou.approvals.admin_views import manually_add_approval, manually_refuse_approval
 from itou.employee_record.models import EmployeeRecord
 from itou.job_applications.models import JobApplication
-from itou.utils.admin import SupportRemarkInline
+from itou.utils.admin import PkSupportRemarkInline
 
 
 class JobApplicationInline(admin.StackedInline):
@@ -116,7 +116,7 @@ class ApprovalAdmin(admin.ModelAdmin):
         SuspensionInline,
         ProlongationInline,
         JobApplicationInline,
-        SupportRemarkInline,
+        PkSupportRemarkInline,
     )
 
     def save_model(self, request, obj, form, change):
@@ -206,7 +206,7 @@ class SuspensionAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_at", "created_by", "updated_at", "updated_by")
     date_hierarchy = "start_at"
-    inlines = (SupportRemarkInline,)
+    inlines = (PkSupportRemarkInline,)
 
     def is_in_progress(self, obj):
         return obj.is_in_progress
@@ -252,7 +252,7 @@ class ProlongationAdmin(admin.ModelAdmin):
         "updated_at",
         "updated_by",
     )
-    inlines = (SupportRemarkInline,)
+    inlines = (PkSupportRemarkInline,)
 
     def is_in_progress(self, obj):
         return obj.is_in_progress
