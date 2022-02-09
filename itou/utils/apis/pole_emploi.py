@@ -95,8 +95,8 @@ class PoleEmploiMiseAJourPassIAEException(Exception):
 
 class PoleEmploiIndividu:
     def __init__(self, first_name: str, last_name: str, birthdate, nir: str):
-        self.first_name = unidecode(first_name).upper()
-        self.last_name = unidecode(last_name).upper()
+        self.first_name = unidecode(first_name).upper()[:13]
+        self.last_name = unidecode(last_name).upper()[:25]
         self.birthdate = birthdate.strftime("%Y-%m-%d") if birthdate else ""
         self.nir = nir
 
