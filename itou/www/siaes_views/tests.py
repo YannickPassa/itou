@@ -715,7 +715,7 @@ class CreateSiaeViewTest(TestCase):
 
 class EditSiaeViewTest(TestCase):
     @mock.patch("itou.utils.apis.geocoding.call_ban_geocoding_api", return_value=BAN_GEOCODING_API_RESULT_MOCK)
-    def test_edit(self, mock_call_ban_geocoding_api):
+    def test_edit(self, _unused_mock):
 
         siae = SiaeWithMembershipFactory()
         user = siae.members.first()

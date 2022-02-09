@@ -82,6 +82,9 @@ class CreateSiaeForm(forms.ModelForm):
 
         return self.cleaned_data
 
+    # WARNING(vperron): the save() method does not accept a "request" parameter in Django, but a "commit" one
+    # I don't understand how we can get an "user" object from this parameter down below, seems there is either a bug
+    # or we manually call save() with something WEIRD. Thanks pylint.
     def save(self, request):
         siae = super().save(commit=False)
         siae.set_coords(siae.geocoding_address, post_code=siae.post_code)
@@ -194,13 +197,13 @@ class FinancialAnnexSelectForm(forms.Form):
         self.fields["financial_annexes"].label_from_instance = self.label_from_instance
 
     @staticmethod
-    def label_from_instance(self):
+    def label_from_instance(siae):
         """
         Display a custom value for the AF in the dropdown instead of the default af.__str__.
 
         From https://stackoverflow.com/questions/41969899/display-field-other-than-str
         """
-        return self.number_prefix_with_spaces
+        return siae.number_prefix_with_spaces
 
     financial_annexes = forms.ModelChoiceField(
         label="Numéro d'annexe financière sans son suffixe de type 'A1M1'",
