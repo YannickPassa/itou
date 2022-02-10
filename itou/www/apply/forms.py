@@ -428,12 +428,12 @@ class FilterJobApplicationsForm(forms.Form):
         required=False, choices=JobApplicationWorkflow.STATE_CHOICES, widget=forms.CheckboxSelectMultiple
     )
     start_date = forms.DateField(
-        label="Début",
+        label="À partir du",
         required=False,
         widget=DuetDatePickerWidget(),
     )
     end_date = forms.DateField(
-        label="Fin",
+        label="Jusqu'au",
         required=False,
         widget=DuetDatePickerWidget(),
     )
@@ -528,9 +528,9 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
     Job applications filters common to SIAE and Prescribers.
     """
 
-    senders = forms.MultipleChoiceField(required=False, label="Nom", widget=Select2MultipleWidget)
+    senders = forms.MultipleChoiceField(required=False, label="Nom de la personne", widget=Select2MultipleWidget)
 
-    job_seekers = forms.MultipleChoiceField(required=False, label="Candidat", widget=Select2MultipleWidget)
+    job_seekers = forms.MultipleChoiceField(required=False, label="Nom du candidat", widget=Select2MultipleWidget)
 
     pass_iae_suspended = forms.BooleanField(label="PASS IAE suspendu", required=False)
     pass_iae_in_progress = forms.BooleanField(label="PASS IAE en cours", required=False)
@@ -540,7 +540,6 @@ class SiaePrescriberFilterJobApplicationsForm(FilterJobApplicationsForm):
         widget=forms.CheckboxSelectMultiple,
     )
     eligibility_validated = forms.BooleanField(label="Éligibilité validée", required=False)
-    eligibility_to_check = forms.BooleanField(label="Éligibilité à vérifier", required=False)
     departments = forms.MultipleChoiceField(
         required=False, label="Département du candidat", widget=forms.CheckboxSelectMultiple
     )
@@ -622,7 +621,7 @@ class SiaeFilterJobApplicationsForm(SiaePrescriberFilterJobApplicationsForm):
     """
 
     sender_organizations = forms.MultipleChoiceField(
-        required=False, label="Prescripteur", widget=Select2MultipleWidget
+        required=False, label="Nom de l'organisme prescripteur", widget=Select2MultipleWidget
     )
 
     def __init__(self, job_applications_qs, *args, **kwargs):

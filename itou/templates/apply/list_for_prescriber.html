@@ -10,19 +10,28 @@
 
     <div class="row">
         <div class="col-12 col-md-4">
-            {% include "apply/includes/job_applications_filter_export_button.html" %}
             <form method="get" action="">
-                {% include "apply/includes/job_applications_filter_job_seekers.html" %}
-                {% include "apply/includes/job_applications_filter_statut.html" %}
-                {% include "apply/includes/job_applications_filter_to_siaes.html" %}
-                {% include "apply/includes/job_applications_filter_sender.html" %}
-                {% include "apply/includes/job_applications_filter_dates.html" %}
-                {% include "apply/includes/job_applications_filter_selected_jobs.html" %}
-                {% include "apply/includes/job_applications_filter_pass.html" %}
-                {% include "apply/includes/job_applications_filter_eligibility_validated.html" %}
-                {% include "apply/includes/job_applications_filter_criteria.html" %}
-                {% include "apply/includes/job_applications_filter_departments.html" %}
-                <button type="submit" class="btn btn-primary">Appliquer</button>
+                <div class="card c-card h-100 w-100 c-card--emploi">
+                    <div class="card-header">
+                        <h3>Filtrer les candidatures</h3>
+                    </div>
+                    <div class="card-body">
+                        {% include "apply/includes/job_applications_filter_job_seekers.html" %}
+                        {% include "apply/includes/job_applications_filter_statut.html" %}
+                        {% include "apply/includes/job_applications_filter_to_siaes.html" %}
+                        {% include "apply/includes/job_applications_filter_sender.html" %}
+                        {% include "apply/includes/job_applications_filter_dates.html" %}
+                        {% include "apply/includes/job_applications_filter_selected_jobs.html" %}
+                        {% include "apply/includes/job_applications_filter_pass.html" %}
+                        {% include "apply/includes/job_applications_filter_eligibility_validated.html" %}
+                        {% include "apply/includes/job_applications_filter_criteria.html" %}
+                        {% include "apply/includes/job_applications_filter_departments.html" %}
+                    </div>
+                    <div class="card-footer text-right">
+                        <a href="{% url 'apply:list_for_prescriber' %}" class="btn btn-outline-primary">Réinitialiser les filtres</a> 
+                        <button type="submit" class="btn btn-primary">Appliquer</button>
+                    </div>
+                </div>
             </form>
         </div>
         <div class="col-12 col-md-8">
@@ -32,14 +41,11 @@
                 </h2>
             {% endif %}
 
+            {% include "apply/includes/job_applications_filter_export_button.html" %}
             {% for job_application in job_applications_page %}
-
                 <div class="card mb-3 mt-4">
-
                     {% include "apply/includes/list_card_header.html" with job_application=job_application %}
-
                     {% include "apply/includes/list_card_body.html" with job_application=job_application %}
-
                     <div class="card-footer">
                         <a href="{% url 'apply:details_for_prescriber' job_application_id=job_application.id %}?back_url={{ request.get_full_path|urlencode }}">
                             Plus d’informations

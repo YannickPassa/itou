@@ -1,7 +1,7 @@
 {% if filters_form.departments %}
     <h5 class="mt-4">Département du candidat</h5>
     {% for choice in filters_form.departments %}
-        <div class="form-check form-check-inline dropdown-item">
+        <div class="form-check">
             <input
                 id="{{ choice.id_for_label }}"
                 class="form-check-input"
