@@ -95,6 +95,10 @@ class PoleEmploiMiseAJourPassIAEException(Exception):
 
 class PoleEmploiIndividu:
     def __init__(self, first_name: str, last_name: str, birthdate, nir: str):
+        # L’API Pole Emploi attend:
+        #  - Des noms/prénoms sans accent ou caractères spéciaux (je n’ai pas plus précis à ce jour)
+        #  - Nom : maximum 25 caractères.
+        #  - Prénom : maximum 13 caractères.
         self.first_name = unidecode(first_name).upper()[:13]
         self.last_name = unidecode(last_name).upper()[:25]
         self.birthdate = birthdate.strftime("%Y-%m-%d") if birthdate else ""
