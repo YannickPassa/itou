@@ -1430,8 +1430,14 @@ class JobApplicationAdminFormTest(TestCase):
         self.assertIn("state", form.fields)
         self.assertIn("created_at", form.fields)
 
-        # tester job_seeker obligatioir
-        # tester SIAE destinataire obligatoire
+        # mandatory fields : job_seeker, to_siae
+        data = self.job_application_sent_by_seeker.copy()
+        data["job_seeker"] = None
+        data["to_siae"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Ce champ est obligatoire.", form.errors["job_seeker"])
+        self.assertIn("Ce champ est obligatoire.", form.errors["to_siae"])
 
     def test_JobApplicationSentByJobSeeker(self):
         """
