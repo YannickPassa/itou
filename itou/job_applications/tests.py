@@ -5,6 +5,7 @@ from unittest.mock import ANY, PropertyMock, patch
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core import mail
+from django.forms.models import model_to_dict
 from django.template.defaultfilters import title
 from django.test import TestCase
 from django.urls import reverse
@@ -16,6 +17,7 @@ from itou.eligibility.factories import EligibilityDiagnosisFactory, EligibilityD
 from itou.eligibility.models import EligibilityDiagnosis
 from itou.employee_record.factories import EmployeeRecordFactory
 from itou.employee_record.models import EmployeeRecord
+from itou.job_applications.admin_forms import JobApplicationAdminForm
 from itou.job_applications.csv_export import generate_csv_export
 from itou.job_applications.factories import (
     JobApplicationFactory,
@@ -1395,3 +1397,154 @@ class JobApplicationNotifyPoleEmploiIntegrationTest(TestCase):
         self.assertEqual(
             notification_log.status, JobApplicationPoleEmploiNotificationLog.STATUS_FAIL_NOTIFY_POLE_EMPLOI
         )
+
+
+class JobApplicationAdminFormTest(TestCase):
+    """
+    should it be moved to specific admin test file ?
+    should we mock SuperUser ?
+    """
+
+    def setUp(self):
+        self.job_seeker = JobSeekerFactory()
+        self.siae = SiaeFactory()
+        self.job_application_sent_by_seeker = model_to_dict(JobApplicationSentByJobSeekerFactory())
+        self.job_application_sent_by_siae = model_to_dict(JobApplicationSentBySiaeFactory())
+        self.job_applications_sent_by_prescriber_with_organization = model_to_dict(
+            JobApplicationSentByPrescriberOrganizationFactory()
+        )
+        self.job_applications_sent_by_prescriber_without_organization = model_to_dict(
+            JobApplicationSentByPrescriberFactory()
+        )
+
+    def test_JobApplicationAdminForm(self):
+        """
+        Job Application sent by a JobSeeker
+        """
+        form = JobApplicationAdminForm()
+
+        self.assertIn("job_seeker", form.fields)
+        self.assertIn("sender", form.fields)
+        self.assertIn("sender_kind", form.fields)
+        self.assertIn("to_siae", form.fields)
+        self.assertIn("state", form.fields)
+        self.assertIn("created_at", form.fields)
+
+        # tester job_seeker obligatioir
+        # tester SIAE destinataire obligatoire
+
+    def test_JobApplicationSentByJobSeeker(self):
+        """
+        Job Application sent by a JobSeeker
+        """
+
+        data = self.job_application_sent_by_seeker.copy()
+        data["sender"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur candidat manquant.", form.errors["__all__"])
+
+        data = self.job_application_sent_by_seeker.copy()
+        data["sender_kind"] = JobApplication.SENDER_KIND_PRESCRIBER
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur du mauvais type.", form.errors["__all__"])
+
+        data = self.job_application_sent_by_seeker.copy()
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_applications_sent_by_siae(self):
+        """
+        Job Application sent by a SIAE
+        """
+        data = self.job_application_sent_by_siae.copy()
+        data["sender_siae"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("SIAE émettrice manquante.", form.errors["__all__"])
+
+        data = self.job_application_sent_by_siae.copy()
+        data["sender"] = self.job_application_sent_by_seeker["sender"]
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur du mauvais type.", form.errors["__all__"])
+
+        data = self.job_application_sent_by_siae.copy()
+        data["sender_kind"] = JobApplication.SENDER_KIND_PRESCRIBER
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("SIAE émettrice inattendue.", form.errors["__all__"])
+
+        data = self.job_application_sent_by_siae.copy()
+        data["sender"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
+
+        data = self.job_application_sent_by_siae.copy()
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_applications_sent_by_prescriber_with_organization(self):
+        """
+        Job Application sent by a prescriber linked to an organization
+        """
+        data = self.job_applications_sent_by_prescriber_with_organization.copy()
+        data["sender"] = self.job_application_sent_by_seeker["sender"]
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur du mauvais type.", form.errors["__all__"])
+
+        data = self.job_applications_sent_by_prescriber_with_organization.copy()
+        data["sender_prescriber_organization"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Organisation du prescripteur émettrice manquante.", form.errors["__all__"])
+
+        # test on new part of code, which have to be checked with support
+        data = self.job_applications_sent_by_prescriber_with_organization.copy()
+        data["sender"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur prescripteur manquant.", form.errors["__all__"])
+
+        """
+        `elif sender_prescriber_organization is not None` can't be executed
+        edge cas catched by previous test on sender_kind
+        """
+        # data = self.job_applications_sent_by_prescriber_with_organization.copy()
+        # data["sender_kind"] = JobApplication.SENDER_KIND_JOB_SEEKER
+        # form = JobApplicationAdminForm(data)
+        # self.assertFalse(form.is_valid())
+        # self.assertIn("Organisation du prescripteur émettrice inattendue.", form.errors["__all__"])
+
+        data = self.job_applications_sent_by_prescriber_with_organization.copy()
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_applications_sent_by_prescriber_without_organization(self):
+        """
+        Job Application sent by a prescriber not linked to an organization
+        """
+
+        data = self.job_applications_sent_by_prescriber_without_organization.copy()
+        data["sender"] = self.job_application_sent_by_seeker["sender"]
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur du mauvais type.", form.errors["__all__"])
+
+        data = self.job_applications_sent_by_prescriber_without_organization.copy()
+        data["sender"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("Emetteur prescripteur manquant.", form.errors["__all__"])
+
+        data = self.job_applications_sent_by_prescriber_without_organization.copy()
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
+
+        # explicit redundant test
+        data = self.job_applications_sent_by_prescriber_without_organization.copy()
+        data["sender_prescriber_organization"] = None
+        form = JobApplicationAdminForm(data)
+        self.assertTrue(form.is_valid())
