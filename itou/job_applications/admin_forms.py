@@ -32,13 +32,20 @@ class JobApplicationAdminForm(forms.ModelForm):
             raise ValidationError("SIAE émettrice inattendue.")
 
         if sender_kind == JobApplication.SENDER_KIND_PRESCRIBER:
-            if sender_prescriber_organization is None:
-                raise ValidationError("Organisation du prescripteur émettrice manquante.")
-            if sender is not None:
+            if sender:
                 # Sender is optional, but if it exists, check its role.
                 if not sender.is_prescriber:
                     raise ValidationError("Emetteur du mauvais type.")
+                # Request organization only if prescriber is linked to organization
+                if sender.is_prescriber_with_org and sender_prescriber_organization is None:
+                    raise ValidationError("Organisation du prescripteur émettrice manquante.")
+            else:
+                # to be checked with support team
+                raise ValidationError("Emetteur prescripteur manquant.")
         elif sender_prescriber_organization is not None:
+            # this part cannot be executed. catched by previous test on sender_kind
+            # as long as sender_kind can only be SENDER_KIND_JOB_SEEKER,
+            # SENDER_KIND_SIAE_STAFF or SENDER_KIND_PRESCRIBER (see models.py)
             raise ValidationError("Organisation du prescripteur émettrice inattendue.")
 
         return
