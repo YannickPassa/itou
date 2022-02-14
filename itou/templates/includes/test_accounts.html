@@ -44,7 +44,7 @@
                         {% for account in employers_accounts %}
                             <div class="card">
                                 <div class="card-body mb-auto py-0">
-                                    <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;">
+                                    <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;" alt="">
                                     <h5 class="h5 card-title font-weight-bold text-center">{{ account.title }}</h5>
                                 </div>
                                 <div class="p-3 text-center">
@@ -52,8 +52,8 @@
                                     <p class="m-auto card-text">{% include "includes/icon.html" with icon="map" title=title class="mr-1"%}{{ account.location }}</p>
                                 </div>
                                 <div class="card-footer text-center">
-                                    <a href="#" class="postLogin" data-email="{{ account.email }}" data-type="siae_staff">
-                                        <button role="button" class="btn btn-link">Utiliser ce compte</button>
+                                    <a href="#" class="postLogin btn btn-link" data-email="{{ account.email }}" data-type="siae_staff">
+                                        Utiliser ce compte
                                     </a>
                                 </div>
                             </div>
@@ -67,14 +67,14 @@
                         {% prescribers_accounts_tag as prescribers_accounts %}
                         {% for account in prescribers_accounts %}
                             <div class="card">
-                                <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;">
+                                <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:11rem;" alt="">
                                 <div class="card-body">
                                     <h5 class="h5 card-title h6 font-weight-bold text-center">{{ account.title|safe }}</h5>
                                     <p class="card-text">{{ account.description }}</p>
                                 </div>
                                 <div class="card-footer text-center">
-                                    <a href="#" class="postLogin" data-email="{{ account.email }}" data-type="prescriber">
-                                        <button role="button" class="btn btn-link">Utiliser ce compte</button>
+                                    <a href="#" class="postLogin btn btn-link" data-email="{{ account.email }}" data-type="prescriber">
+                                        Utiliser ce compte
                                     </a>
                                 </div>
                             </div>
@@ -88,14 +88,14 @@
                         {% job_seekers_accounts_tag as job_seekers_accounts %}
                         {% for account in job_seekers_accounts %}
                             <div class="card">
-                                <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:10rem;">
+                                <img src="{% static '/img/test_accounts/' %}{{ account.image }}" class="card-img-top p-2" style="min-height:10rem;" alt="">
                                 <div class="card-body">
                                     <h5 class="h5 card-title font-weight-bold text-center mb-0">{{ account.title }}</h5>
                                     <p class="card-text">{{ account.description }}</p>
                                 </div>
                                 <div class="card-footer text-center">
-                                    <a href="#" class="postLogin" data-email="{{ account.email }}" data-type="job_seeker">
-                                        <button role="button" class="btn btn-link">Utiliser ce compte</button>
+                                    <a href="#" class="postLogin btn btn-link" data-email="{{ account.email }}" data-type="job_seeker">
+                                        Utiliser ce compte
                                     </a>
                                 </div>
                             </div>

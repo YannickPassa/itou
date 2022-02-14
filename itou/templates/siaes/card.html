@@ -43,7 +43,7 @@
                     {% if siae.website %}
                         <p>
                             {% include "includes/icon.html" with icon="external-link" title="Site Internet" %}
-                            <a href="{{ siae.website }}" rel="noopener" target="_blank">{{ siae.website }}</a>
+                            <a href="{{ siae.website }}" rel="noopener" target="_blank" title="{{ siae.website }} (ouverture dans un nouvel onglet)">{{ siae.website }}</a>
                         </p>
                     {% endif %}
 
@@ -69,7 +69,7 @@
                         <span class="h4">Cette structure vous intéresse ?</span>
                         <a class="btn btn-primary float-right"
                             href="{% url 'apply:start' siae_pk=siae.pk %}{% if back_url %}?back_url={{ back_url }}{% endif %}"
-                            aria-label="Postuler auprès de l'employeur solidaire {{ siae.display_name }}">
+                            title="Proposer votre candidature auprès de l'employeur solidaire {{ siae.display_name }}">
                             Proposer votre candidature
                         </a>
                     </p>
