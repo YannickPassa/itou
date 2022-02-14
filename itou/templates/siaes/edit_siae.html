@@ -1,42 +1,67 @@
 {% extends "layout/content_small.html" %}
 {% load bootstrap4 %}
+{% load theme_inclusion %}
 
 {% block title %}Modifier les coordonnées de votre structure{{ block.super }}{% endblock %}
 
+{% block breadcrumbs %}
+{% include 'siaes/edit_siae_breadcrumb.html' %}
+{% endblock %}
+
 {% block content %}
 
-<h1 class="h1-hero-c1">Modifier les coordonnées de votre structure</h1>
-
-<h2 class="h1 text-muted">
-    {{ siae.display_name }}
-</h2>
-<p class="text-muted">
-    {% if siae.siret %}
-        SIRET : {{ siae.siret }}
-    {% endif %}
-</p>
-
-<form method="post" action="" class="js-prevent-multiple-submit">
-
-    <div class="alert alert-emploi" role="alert">
-        <i>Laisser les champs vides pour ne rien afficher.</i>
+<div class="card mt-6 p-2 bg-white">
+    <div class="card-body">
+        <p class="mb-0"><b>Etape 1</b>/3 : Informations générales</p>
     </div>
+</div>
 
-    {% csrf_token %}
-    {% bootstrap_form_errors form type="all" %}
-    {% bootstrap_label "Nom à afficher" label_title="a" label_for=form.brand.id  %}
-    {% bootstrap_field form.brand show_label=False %}
+<div class="card mt-6 p-2 bg-white">
+    <div class="card-body">
+        <div class="text-center">
+            <h1 class="h1-hero"><i class="ri-home-smile-fill ri-2xl"></i></h1>
+            <h1 class="h1">Informations générales de ma structure</h1>
+        </div>
 
-    {% bootstrap_form form exclude="brand" %}
+        <div class="c-card shadow my-4 p-2 bg-white">
+            <div class="card-body">
+                <h2 class="h1">
+                    {{ siae.display_name }}
+                </h2>
+                <p class="text-muted">
+                    SIRET : {{ siae.siret | default:"-" }}
+                </p>
+            </div>
+        </div>
 
-    <p>
-        En cliquant sur le bouton "Enregistrer", vous acceptez que vos informations et coordonnées ci-dessus soient rendues publiques.
-    </p>
-    {% buttons %}
-        <a class="btn btn-outline-primary" href="{% url 'dashboard:index' %}">Annuler</a>
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
-    {% endbuttons %}
 
-</form>
+        <form method="post" action="" class="js-prevent-multiple-submit">
+            {% csrf_token %}
+            {% bootstrap_form_errors form type="all" %}
+
+            {% bootstrap_field form.brand %}
+            <hr>
+            {% bootstrap_field form.address_line_1 %}
+            {% bootstrap_field form.address_line_2 %}
+            <div class="form-row">
+                {% bootstrap_field form.post_code form_group_class='form-group col-md-3' %}
+                {% bootstrap_field form.city form_group_class='form-group col-md-9' %}
+            </div>
+            <hr>
+            {% bootstrap_field form.phone %}
+            {% bootstrap_field form.email%}
+            {% bootstrap_field form.website%}
+
+            {% buttons %}
+            <div class="float-right mt-4">
+                <a class="btn" href="{% url 'dashboard:index' %}">Retour</a>
+                <button type="submit" class="btn btn-primary">Suivant</button>
+            </div>
+            {% endbuttons %}
+
+        </form>
+    </div>
+</div>
+
 
 {% endblock %}

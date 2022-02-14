@@ -1,0 +1,72 @@
+{% extends "layout/content_small.html" %}
+{% load bootstrap4 %}
+{% load theme_inclusion %}
+
+{% block title %}Modifier les coordonnées de votre structure{{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+{% include 'siaes/edit_siae_breadcrumb.html' %}
+{% endblock %}
+
+{% block content %}
+
+<div class="card mt-6 p-2 bg-white">
+    <div class="card-body">
+        <p class="mb-0"><b>Etape 2</b>/3 : Activité de ma structure</p>
+    </div>
+</div>
+
+<div class="card mt-6 p-2 bg-white">
+    <div class="card-body">
+        <div class="text-center">
+            <h1 class="h1-hero"><i class="ri-home-smile-fill ri-2xl"></i></h1>
+            <h1 class="h1">Présentation de l'activité de ma structure</h1>
+        </div>
+
+        <form method="post" action="" class="js-prevent-multiple-submit">
+            {% csrf_token %}
+            {% bootstrap_form_errors form type="all" %}
+
+            {% bootstrap_field form.description %}
+            <div class="c-card shadow my-4 p-2 bg-emploi-lighter">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <i class="ri-information-line ri-xl col-1"></i>
+                        <b class="col">Conseil</b>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <span class="col">Plus la description sera précise sur la nature de l’activité, plus vous aurez de chances d’obtenir des candidatures pertinentes. </span>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            {% bootstrap_field form.provided_support %}
+            <div class="c-card shadow my-4 p-2 bg-emploi-lighter">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <i class="ri-information-line ri-xl col-1"></i>
+                        <b class="col">Conseil</b>
+                    </div>
+                    <div class="row">
+                        <div class="col-1"></div>
+                        <span class="col">Détaillez l’accompagnement délivré ainsi que les freins que votre structure peut aider à lever.</span>
+                    </div>
+                </div>
+            </div>
+
+            {% buttons %}
+            <div class="float-right mt-4">
+                <a class="btn" href="{{ prev_url }}">Retour</a>
+                <button type="submit" class="btn btn-primary">Suivant</button>
+            </div>
+            {% endbuttons %}
+
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}

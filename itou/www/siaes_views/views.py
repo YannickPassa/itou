@@ -9,13 +9,23 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from itou.common_apps.address.departments import department_from_postcode
 from itou.common_apps.organizations.views import deactivate_org_member, update_org_admin_role
 from itou.siaes.models import Siae, SiaeFinancialAnnex, SiaeJobDescription
 from itou.users.models import User
 from itou.utils.perms.siae import get_current_siae_or_404
 from itou.utils.urls import get_safe_url
-from itou.www.siaes_views.forms import BlockJobApplicationsForm, CreateSiaeForm, EditSiaeForm, FinancialAnnexSelectForm
+from itou.www.siaes_views.forms import (
+    BlockJobApplicationsForm,
+    CreateSiaeForm,
+    EditSiaeDescriptionForm,
+    EditSiaeForm,
+    FinancialAnnexSelectForm,
+)
 from itou.www.siaes_views.utils import refresh_card_list
+
+
+EDIT_SIAE_SESSION_KEY = "edit_siae_session_key"
 
 
 def card(request, siae_id, template_name="siaes/card.html"):
@@ -264,21 +274,67 @@ def create_siae(request, template_name="siaes/create_siae.html"):
 
 @login_required
 def edit_siae(request, template_name="siaes/edit_siae.html"):
-    """
-    Edit an SIAE.
-    """
+    if EDIT_SIAE_SESSION_KEY not in request.session:
+        request.session[EDIT_SIAE_SESSION_KEY] = {}
+
     siae = get_current_siae_or_404(request)
     if not siae.has_admin(request.user):
         raise PermissionDenied
 
-    form = EditSiaeForm(instance=siae, data=request.POST or None)
+    form = EditSiaeForm(instance=siae, data=request.POST or None, initial=request.session[EDIT_SIAE_SESSION_KEY])
+    if request.method == "POST" and form.is_valid():
+        request.session[EDIT_SIAE_SESSION_KEY].update(form.cleaned_data)
+        request.session.modified = True
+        return HttpResponseRedirect(reverse("siaes_views:edit_siae_description"))
+
+    context = {"form": form, "siae": siae}
+    return render(request, template_name, context)
+
+
+@login_required
+def edit_siae_description(request, template_name="siaes/edit_siae_description.html"):
+    if EDIT_SIAE_SESSION_KEY not in request.session:
+        return HttpResponseRedirect(reverse("dashboard:index"))
+
+    siae = get_current_siae_or_404(request)
+    if not siae.has_admin(request.user):
+        raise PermissionDenied
+
+    form = EditSiaeDescriptionForm(
+        instance=siae, data=request.POST or None, initial=request.session[EDIT_SIAE_SESSION_KEY]
+    )
 
     if request.method == "POST" and form.is_valid():
-        form.save()
+        request.session[EDIT_SIAE_SESSION_KEY].update(form.cleaned_data)
+        request.session.modified = True
+        return HttpResponseRedirect(reverse("siaes_views:edit_siae_summary"))
+
+    context = {"form": form, "siae": siae, "prev_url": reverse("siaes_views:edit_siae")}
+    return render(request, template_name, context)
+
+
+@login_required
+def edit_siae_summary(request, template_name="siaes/edit_siae_summary.html"):
+    if EDIT_SIAE_SESSION_KEY not in request.session:
+        return HttpResponseRedirect(reverse("dashboard:index"))
+
+    siae = get_current_siae_or_404(request)
+    if not siae.has_admin(request.user):
+        raise PermissionDenied
+
+    form_data = request.session[EDIT_SIAE_SESSION_KEY]
+    if request.method == "POST":
+        siae.__dict__.update(**form_data)
+        siae.department = department_from_postcode(siae.post_code)
+        siae.set_coords(siae.geocoding_address, post_code=siae.post_code)
+        siae.save()
+        # Clear the session now, so that we start fresh if we edit again.
+        del request.session[EDIT_SIAE_SESSION_KEY]
+        request.session.modified = True
         messages.success(request, "Mise à jour effectuée !")
         return HttpResponseRedirect(reverse("dashboard:index"))
 
-    context = {"form": form, "siae": siae}
+    context = {"siae": siae, "form_data": form_data, "prev_url": reverse("siaes_views:edit_siae_description")}
     return render(request, template_name, context)
 
 
