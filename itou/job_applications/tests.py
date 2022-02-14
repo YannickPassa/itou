@@ -214,6 +214,52 @@ class JobApplicationModelTest(TestCase):
         )
         self.assertTrue(job_application.is_from_ai_stock)
 
+    def test_can_have_employee_record(self, *args, **kwargs):
+        # nominal test
+        today = datetime.date.today()
+        job_application = JobApplicationWithApprovalFactory(hiring_start_at=today)
+        self.assertTrue(job_application.can_have_employee_record)
+
+        # test application before EMPLOYEE_RECORD_FEATURE_AVAILABILITY_DATE
+        day_in_the_past = settings.EMPLOYEE_RECORD_FEATURE_AVAILABILITY_DATE.date() - relativedelta(months=2)
+        job_application = JobApplicationWithApprovalFactory(hiring_start_at=day_in_the_past)
+        self.assertFalse(job_application.can_have_employee_record)
+
+        # test hiring without approval
+        job_application = JobApplicationWithoutApprovalFactory()
+        self.assertFalse(job_application.can_have_employee_record)
+
+        # test state not STATE_ACCEPTED
+        states_transition_not_possible = [
+            JobApplicationWorkflow.STATE_NEW,
+            JobApplicationWorkflow.STATE_PROCESSING,
+            JobApplicationWorkflow.STATE_POSTPONED,
+            JobApplicationWorkflow.STATE_CANCELLED,
+            JobApplicationWorkflow.STATE_REFUSED,
+            JobApplicationWorkflow.STATE_OBSOLETE,
+        ]
+
+        for state in states_transition_not_possible:
+            job_application = JobApplicationFactory(state=state)
+            self.assertFalse(job_application.can_have_employee_record)
+
+        # test approval is invalid
+        job_application = JobApplicationFactory(hiring_start_at=today + relativedelta(months=2))
+        self.assertFalse(job_application.can_have_employee_record)
+
+        # test Employee_Record already exists
+        job_application = JobApplicationWithApprovalFactory(hiring_start_at=today)
+        EmployeeRecordFactory(job_application=job_application)
+        self.assertFalse(job_application.can_have_employee_record)
+
+        # test SIAE cannot use Employee_Record
+        for siae_kind in [
+            siae_kind for siae_kind, _ in Siae.KIND_CHOICES if siae_kind not in Siae.ASP_EMPLOYEE_RECORD_KINDS
+        ]:
+            not_eligible_siae = SiaeFactory(kind=siae_kind)
+            job_application = JobApplicationWithApprovalFactory(to_siae=not_eligible_siae)
+            self.assertFalse(job_application.can_have_employee_record)
+
 
 class JobApplicationQuerySetTest(TestCase):
     def test_created_in_past(self):
