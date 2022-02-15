@@ -118,14 +118,14 @@ def ensure_compatible_first_name(first_name):
     simplifié, le PRÉNOM  doit:
      - être en majuscule
      - sans accents (ils doivent être remplacés par l’équivalent non accentué)
-     - le tiret, l’espace et l’apostrophe sont acceptés dans les noms
+     - le tiret remplace les espaces. Apostrophe et espace sont interdits.
      - sa longueur est max 13 caractères
     Ainsi, "Nôm^' Exémple{}$" devient "NOM EXEMPLE"
     """
     # remove accents, convert to uppercase, replace spaces with dash
     first_name = unidecode(first_name).upper().replace(" ", "-")
     # We get rid of all the incompatible characters (including spaces)
-    replaced = re.sub("[^A-Z-']", "", first_name)
+    replaced = re.sub("[^A-Z-]", "", first_name)
     # We finally keep a limited amount of letters
     return replaced[:13]
 
