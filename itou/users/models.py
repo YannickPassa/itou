@@ -282,10 +282,6 @@ class User(AbstractUser, AddressMixin):
         if self.birth_country and self.birth_country.code != self.INSEE_CODE_FRANCE and self.birth_place:
             raise ValidationError(self.ERROR_BIRTH_COMMUNE_WITH_FOREIGN_COUNTRY)
 
-        # send smart warning if email already exist
-        if self.email_already_exists(self.email):
-            raise ValidationError(self.ERROR_EMAIL_ALREADY_EXISTS)
-
     def save(self, *args, **kwargs):
         # Update department from postal code (if possible).
         self.department = department_from_postcode(self.post_code)
