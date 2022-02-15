@@ -722,6 +722,14 @@ class ApiEntrepriseTest(SimpleTestCase):
 
 class PoleEmploiIndividuTest(TestCase):
     def test_name_conversion_for_special_characters(self):
+        individual = PoleEmploiIndividu(
+            "marie christine%{}", "Bindika n'kissi ", datetime.date(1979, 6, 3), "152062441001270"
+        )
+
+        self.assertEqual(individual.first_name, "MARIE-CHRISTINE")
+        self.assertEqual(individual.last_name, "BINDIKA N'KISSI ")
+
+    def test_name_conversion_for_accents(self):
         """first name and last name should not have accents, because Pole Emploi'S API cannot handle them"""
         individual = PoleEmploiIndividu("aéïèêë", "gh'îkñ", datetime.date(1979, 6, 3), "152062441001270")
 
