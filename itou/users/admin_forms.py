@@ -30,5 +30,5 @@ class UserAdminForm(UserChangeForm):
                 )
 
         # smart warning if email already exist
-        if self.email_already_exists(self.email):
-            raise ValidationError(self.ERROR_EMAIL_ALREADY_EXISTS)
+        if self.instance.email_already_exists(self.instance.email):
+            raise ValidationError(self.instance.ERROR_EMAIL_ALREADY_EXISTS)
