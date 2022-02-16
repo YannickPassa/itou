@@ -83,7 +83,7 @@ class CreateSiaeForm(forms.ModelForm):
         return self.cleaned_data
 
     # WARNING(vperron): the save() method does not accept a "request" parameter in Django, but a "commit" one
-    # I don't understand how we can get an "user" object from this parameter down below, seems there is either a bug
+    # I don't understand how we can get a "user" object from this parameter down below, seems there is either a bug
     # or we manually call save() with something WEIRD. Thanks pylint.
     def save(self, request):
         siae = super().save(commit=False)
